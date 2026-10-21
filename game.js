@@ -199,6 +199,22 @@ function getXpValue(type) {
   return 8 + player.level * 2;
 }
 
+function killDeadEnemies() {
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    if (e.health <= 0) {
+      spawnParticles(e.x, e.y, e.color || '#ff4444', e.isBoss ? 25 : 12);
+      if (e.isBoss) {
+        xpOrbs.push({ x: e.x, y: e.y, value: 0, radius: 14, isChest: true });
+      } else {
+        xpOrbs.push({ x: e.x, y: e.y, value: getXpValue(e.type), radius: 6 });
+      }
+      score += e.isBoss ? 150 : (e.type === 'tank' ? 20 : e.type === 'fast' ? 15 : 10);
+      enemies.splice(i, 1);
+    }
+  }
+}
+
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
   if (key === 'pistole') return ' (Evo: Schaden 30+ & 3 Schüsse)';
@@ -550,6 +566,9 @@ function update(dt) {
   updateParticles(dt);
   updateDamageNumbers(dt);
 
+  // Remove dead enemies from all damage sources
+  killDeadEnemies();
+
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.x += p.vx;
@@ -572,20 +591,13 @@ function update(dt) {
         spawnDamageNumber(e.x, e.y, p.damage);
         p.hits = (p.hits || 0) + 1;
         if (p.hits > (p.piercing || 0)) projectiles.splice(i, 1);
-        if (e.health <= 0) {
-          spawnParticles(e.x, e.y, e.color || '#ff4444', e.isBoss ? 25 : 12);
-          if (e.isBoss) {
-            xpOrbs.push({ x: e.x, y: e.y, value: 0, radius: 14, isChest: true });
-          } else {
-            xpOrbs.push({ x: e.x, y: e.y, value: getXpValue(e.type), radius: 6 });
-          }
-          enemies.splice(j, 1);
-          score += e.isBoss ? 150 : (e.type === 'tank' ? 20 : e.type === 'fast' ? 15 : 10);
-        }
         if (p.hits > (p.piercing || 0)) break;
       }
     }
   }
+
+  // Check again after projectile hits
+  killDeadEnemies();
 
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
