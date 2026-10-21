@@ -192,6 +192,19 @@ function getXpValue(type) {
   return 8 + player.level * 2;
 }
 
+function updateUI() {
+  scoreEl.textContent = 'Score: ' + score;
+  levelEl.textContent = 'Level: ' + player.level;
+  highscoreEl.textContent = 'Best: ' + highscore;
+  const pct = Math.max(0, (player.health / player.maxHealth) * 100);
+  healthFill.style.width = pct + '%';
+  healthFill.style.background = pct > 50 ? '#4caf50' : pct > 25 ? '#ff9800' : '#f44336';
+
+  const xpPct = Math.min(100, (player.xp / Math.max(1, player.xpToNext)) * 100);
+  xpFill.style.width = xpPct + '%';
+  xpText.textContent = 'XP: ' + Math.floor(player.xp) + ' / ' + player.xpToNext;
+}
+
 let spawnTimer = 0;
 function spawnEnemy(type = 'normal') {
   const side = Math.floor(Math.random() * 4);
@@ -497,6 +510,7 @@ function update(dt) {
   }
 
   const pullSpeed = weapons.magnet.enabled ? 8 + weapons.magnet.level * 1.5 : 5.5;
+  let xpChanged = false;
   for (let i = xpOrbs.length - 1; i >= 0; i--) {
     const o = xpOrbs[i];
     const d = Math.hypot(o.x - player.x, o.y - player.y);
@@ -510,11 +524,13 @@ function update(dt) {
         openChest();
       } else {
         player.xp += o.value;
+        xpChanged = true;
         checkLevelUp();
       }
       xpOrbs.splice(i, 1);
     }
   }
+  if (xpChanged) updateUI();
 
   spawnTimer += dt;
   const spawnInterval = Math.max(0.28, 1.6 - player.level * 0.06);
@@ -544,6 +560,7 @@ function checkLevelUp() {
     player.level++;
     player.xpToNext = Math.floor(player.xpToNext * 1.32);
     showLevelUp();
+    updateUI();
   }
 }
 
@@ -616,19 +633,6 @@ function showLevelUp() {
     };
     upgradesEl.appendChild(btn);
   }
-}
-
-function updateUI() {
-  scoreEl.textContent = 'Score: ' + score;
-  levelEl.textContent = 'Level: ' + player.level;
-  highscoreEl.textContent = 'Best: ' + highscore;
-  const pct = Math.max(0, (player.health / player.maxHealth) * 100);
-  healthFill.style.width = pct + '%';
-  healthFill.style.background = pct > 50 ? '#4caf50' : pct > 25 ? '#ff9800' : '#f44336';
-
-  const xpPct = Math.min(100, (player.xp / player.xpToNext) * 100);
-  xpFill.style.width = xpPct + '%';
-  xpText.textContent = 'XP: ' + Math.floor(player.xp) + ' / ' + player.xpToNext;
 }
 
 function gameOver() {
@@ -800,7 +804,6 @@ function draw() {
   ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Damage numbers
   ctx.font = 'bold 14px -apple-system, sans-serif';
   ctx.textAlign = 'center';
   for (const d of damageNumbers) {
