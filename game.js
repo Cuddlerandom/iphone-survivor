@@ -66,7 +66,9 @@ let player = {
   duration: 1,
   cooldownRed: 1,
   knockback: 1,
-  pierce: 0
+  pierce: 0,
+  armor: 0,
+  xpGain: 1
 };
 
 let weapons = {
@@ -81,13 +83,23 @@ let weapons = {
   magnet: { level: 0, enabled: false, evolved: false },
   mine: { level: 0, enabled: false, timer: 0, evolved: false },
   laser: { level: 0, enabled: false, timer: 0, evolved: false },
-  freeze: { level: 0, enabled: false, timer: 0, evolved: false }
+  freeze: { level: 0, enabled: false, timer: 0, evolved: false },
+  rocket: { level: 0, enabled: false, timer: 0, evolved: false },
+  whip: { level: 0, enabled: false, timer: 0, evolved: false },
+  shield: { level: 0, enabled: false, timer: 0, evolved: false }
+};
+
+let passives = {
+  critRing: { level: 0, max: 5 },
+  armor: { level: 0, max: 5 },
+  xpBoost: { level: 0, max: 5 }
 };
 
 let enemies = [];
 let projectiles = [];
 let boomerangs = [];
 let mines = [];
+let rockets = [];
 let xpOrbs = [];
 let particles = [];
 let damageNumbers = [];
@@ -201,10 +213,11 @@ function spawnDamageNumber(x, y, amount) {
 }
 
 function getXpValue(type) {
-  if (type === 'fast') return 15 + player.level * 3;
-  if (type === 'tank') return 26 + player.level * 4;
-  if (type === 'boss') return 70 + player.level * 8;
-  return 12 + player.level * 2;
+  let base = 12 + player.level * 2;
+  if (type === 'fast') base = 15 + player.level * 3;
+  if (type === 'tank') base = 26 + player.level * 4;
+  if (type === 'boss') base = 70 + player.level * 8;
+  return Math.floor(base * player.xpGain);
 }
 
 function killDeadEnemies() {
@@ -237,6 +250,9 @@ function getEvolveHint(key) {
   if (key === 'mine') return 'Evo mit: Projektil 4+';
   if (key === 'laser') return 'Evo mit: Angriffsspeed';
   if (key === 'freeze') return 'Evo mit: Duration 1.45+';
+  if (key === 'rocket') return 'Evo mit: Area 1.5+';
+  if (key === 'whip') return 'Evo mit: Cooldown 1.3+';
+  if (key === 'shield') return 'Evo mit: Armor 3+';
   return '';
 }
 
@@ -619,6 +635,90 @@ function updateFreeze(dt) {
   }
 }
 
+function updateRocket(dt) {
+  if (!weapons.rocket.enabled) return;
+  weapons.rocket.timer += dt;
+  const interval = (weapons.rocket.evolved ? 1.4 : 2.0) / player.cooldownRed;
+  if (weapons.rocket.timer > interval) {
+    weapons.rocket.timer = 0;
+    const target = nearestEnemy();
+    if (!target) return;
+    const angle = Math.atan2(target.y - player.y, target.x - player.x);
+    rockets.push({
+      x: player.x,
+      y: player.y,
+      vx: Math.cos(angle) * 6,
+      vy: Math.sin(angle) * 6,
+      damage: player.damage * 1.8 * weapons.rocket.level * (weapons.rocket.evolved ? 1.6 : 1),
+      radius: 6,
+      splash: 40 * player.area * (weapons.rocket.evolved ? 1.5 : 1)
+    });
+  }
+  for (let i = rockets.length - 1; i >= 0; i--) {
+    const r = rockets[i];
+    r.x += r.vx;
+    r.y += r.vy;
+    if (r.x < -50 || r.x > canvas.width + 50 || r.y < -50 || r.y > canvas.height + 50) {
+      rockets.splice(i, 1);
+      continue;
+    }
+    for (const e of enemies) {
+      if (Math.hypot(r.x - e.x, r.y - e.y) < r.radius + e.radius) {
+        for (const ee of enemies) {
+          if (Math.hypot(r.x - ee.x, r.y - ee.y) < r.splash) {
+            ee.health -= r.damage;
+            spawnDamageNumber(ee.x, ee.y, r.damage);
+          }
+        }
+        spawnParticles(r.x, r.y, '#ff6600', 20);
+        rockets.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
+
+function updateWhip(dt) {
+  if (!weapons.whip.enabled) return;
+  weapons.whip.timer += dt;
+  const cooldown = (weapons.whip.evolved ? 0.6 : 0.9) / player.cooldownRed;
+  if (weapons.whip.timer < cooldown) return;
+  const target = nearestEnemy();
+  if (!target) return;
+  const range = 90 * player.area;
+  if (Math.hypot(target.x - player.x, target.y - player.y) > range) return;
+  const angle = Math.atan2(target.y - player.y, target.x - player.x);
+  const dmg = player.damage * 0.7 * weapons.whip.level * (weapons.whip.evolved ? 1.5 : 1);
+  for (const e of enemies) {
+    const d = Math.hypot(e.x - player.x, e.y - player.y);
+    if (d > range) continue;
+    const a = Math.atan2(e.y - player.y, e.x - player.x);
+    let diff = Math.abs(a - angle);
+    if (diff > Math.PI) diff = Math.PI * 2 - diff;
+    if (diff < 1.2) {
+      e.health -= dmg;
+      spawnDamageNumber(e.x, e.y, dmg);
+    }
+  }
+  weapons.whip.timer = 0;
+}
+
+function updateShield(dt) {
+  if (!weapons.shield.enabled) return;
+  const rad = 55 * (weapons.shield.evolved ? 1.4 : 1);
+  for (const e of enemies) {
+    if (Math.hypot(e.x - player.x, e.y - player.y) < rad + e.radius) {
+      const angle = Math.atan2(e.y - player.y, e.x - player.x);
+      e.x += Math.cos(angle) * 4;
+      e.y += Math.sin(angle) * 4;
+      if (weapons.shield.evolved && Math.random() < 0.1) {
+        e.health -= player.damage * 0.3;
+        spawnDamageNumber(e.x, e.y, player.damage * 0.3);
+      }
+    }
+  }
+}
+
 function updateMagnet() {
   if (!weapons.magnet.enabled) {
     player.pickupRange = 90;
@@ -719,6 +819,9 @@ function update(dt) {
   updateMine(dt);
   updateLaser(dt);
   updateFreeze(dt);
+  updateRocket(dt);
+  updateWhip(dt);
+  updateShield(dt);
   updateMagnet();
   updateParticles(dt);
   updateDamageNumbers(dt);
@@ -775,7 +878,8 @@ function update(dt) {
     e.x += Math.cos(angle) * e.speed * speedMult;
     e.y += Math.sin(angle) * e.speed * speedMult;
     if (Math.hypot(e.x - player.x, e.y - player.y) < e.radius + player.radius) {
-      player.health -= e.damage || 8;
+      const dmgTaken = Math.max(1, (e.damage || 8) * (1 - player.armor * 0.15));
+      player.health -= dmgTaken;
       spawnParticles(player.x, player.y, '#ff0000', 6);
       enemies.splice(i, 1);
       if (player.health <= 0) gameOver();
@@ -856,6 +960,9 @@ function canEvolve(weaponKey) {
   if (weaponKey === 'mine' && player.projectileCount >= 4) return true;
   if (weaponKey === 'laser' && player.fireRate <= 0.42) return true;
   if (weaponKey === 'freeze' && player.duration >= 1.45) return true;
+  if (weaponKey === 'rocket' && player.area >= 1.5) return true;
+  if (weaponKey === 'whip' && player.cooldownRed >= 1.3) return true;
+  if (weaponKey === 'shield' && player.armor >= 3) return true;
   return false;
 }
 
@@ -897,6 +1004,9 @@ function showLevelUp() {
   if (canEvolve('mine')) options.push({ text: '✨💣 Mine → Cluster', level: weapons.mine.level, apply: () => { weapons.mine.evolved = true; } });
   if (canEvolve('laser')) options.push({ text: '✨🔪 Laser → Beam', level: weapons.laser.level, apply: () => { weapons.laser.evolved = true; } });
   if (canEvolve('freeze')) options.push({ text: '✨❄️ Freeze → Blizzard', level: weapons.freeze.level, apply: () => { weapons.freeze.evolved = true; } });
+  if (canEvolve('rocket')) options.push({ text: '✨🚀 Rocket → Barrage', level: weapons.rocket.level, apply: () => { weapons.rocket.evolved = true; } });
+  if (canEvolve('whip')) options.push({ text: '✨👊 Whip → Chain', level: weapons.whip.level, apply: () => { weapons.whip.evolved = true; } });
+  if (canEvolve('shield')) options.push({ text: '✨🛡 Shield → Thorns', level: weapons.shield.level, apply: () => { weapons.shield.evolved = true; } });
 
   options.push({ text: '💪 Schaden +20%', apply: () => { player.damage *= 1.2; } });
   options.push({ text: '⚡ Angriffsgeschw. +12%', apply: () => { player.fireRate = Math.max(0.15, player.fireRate * 0.88); } });
@@ -911,6 +1021,19 @@ function showLevelUp() {
   options.push({ text: '⏭ Cooldown Red. +15%', apply: () => { player.cooldownRed *= 1.15; } });
   options.push({ text: '💨 Knockback +25%', apply: () => { player.knockback *= 1.25; } });
   options.push({ text: '🔫 Pierce +1', apply: () => { player.pierce = Math.min(player.pierce + 1, 6); } });
+
+  if (passives.critRing.level < passives.critRing.max) options.push({ text: '💍 Crit Ring +1', level: passives.critRing.level, apply: () => { passives.critRing.level++; player.critChance += 0.04; } });
+  if (passives.armor.level < passives.armor.max) options.push({ text: '🛡 Armor +1', level: passives.armor.level, apply: () => { passives.armor.level++; player.armor += 1; } });
+  if (passives.xpBoost.level < passives.xpBoost.max) options.push({ text: '⭐ XP Boost +1', level: passives.xpBoost.level, apply: () => { passives.xpBoost.level++; player.xpGain += 0.12; } });
+
+  if (!weapons.rocket.enabled) options.push({ text: '🚀 Rocket freischalten', apply: () => { weapons.rocket.enabled = true; weapons.rocket.level = 1; } });
+  else if (weapons.rocket.level < 6) options.push({ text: '🚀 Rocket Level +1', hint: getEvolveHint('rocket'), level: weapons.rocket.level, apply: () => { weapons.rocket.level++; } });
+
+  if (!weapons.whip.enabled) options.push({ text: '👊 Whip freischalten', apply: () => { weapons.whip.enabled = true; weapons.whip.level = 1; } });
+  else if (weapons.whip.level < 6) options.push({ text: '👊 Whip Level +1', hint: getEvolveHint('whip'), level: weapons.whip.level, apply: () => { weapons.whip.level++; } });
+
+  if (!weapons.shield.enabled) options.push({ text: '🛡 Shield freischalten', apply: () => { weapons.shield.enabled = true; weapons.shield.level = 1; } });
+  else if (weapons.shield.level < 6) options.push({ text: '🛡 Shield Level +1', hint: getEvolveHint('shield'), level: weapons.shield.level, apply: () => { weapons.shield.level++; } });
 
   if (!weapons.mp.enabled) options.push({ text: '🔫 MP freischalten', apply: () => { weapons.mp.enabled = true; weapons.mp.level = 1; } });
   else if (weapons.mp.level < 6) options.push({ text: '🔫 MP Level +1', hint: getEvolveHint('mp'), level: weapons.mp.level, apply: () => { weapons.mp.level++; } });
@@ -998,13 +1121,19 @@ function resetGame() {
     duration: 1,
     cooldownRed: 1,
     knockback: 1,
-    pierce: 0
+    pierce: 0,
+    armor: 0,
+    xpGain: 1
   };
+  passives.critRing.level = 0;
+  passives.armor.level = 0;
+  passives.xpBoost.level = 0;
   applyStartingWeapon(startingWeapon);
   enemies = [];
   projectiles = [];
   boomerangs = [];
   mines = [];
+  rockets = [];
   xpOrbs = [];
   particles = [];
   damageNumbers = [];
@@ -1074,6 +1203,21 @@ function draw() {
     ctx.beginPath();
     ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  ctx.fillStyle = '#ff4400';
+  for (const r of rockets) {
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (weapons.shield.enabled) {
+    ctx.strokeStyle = weapons.shield.evolved ? 'rgba(255,100,100,0.6)' : 'rgba(100,200,255,0.5)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, 55 * (weapons.shield.evolved ? 1.4 : 1), 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   if (weapons.katana.enabled && weapons.katana.slashTimer > 0) {
