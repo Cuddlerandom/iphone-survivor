@@ -40,7 +40,7 @@ html, body {
   margin-top: 2px;
 }
 
-#healthBar {
+#healthBar, #xpBar {
   width: 150px;
   height: 10px;
   background: #333;
@@ -53,6 +53,19 @@ html, body {
   width: 100%;
   background: #4caf50;
   transition: width 0.2s;
+}
+
+#xpFill {
+  height: 100%;
+  width: 0%;
+  background: #2196f3;
+  transition: width 0.2s;
+}
+
+#xpText {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 2px;
 }
 
 #pauseBtn {
@@ -69,7 +82,7 @@ html, body {
   z-index: 20;
 }
 
-#levelUpModal, #gameOver, #iphoneOnly, #pauseMenu {
+#levelUpModal, #gameOver, #iphoneOnly, #pauseMenu, #chestModal {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -83,7 +96,7 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-#pauseMenu button, #upgrades button {
+#pauseMenu button, #upgrades button, #chestCloseBtn {
   display: block;
   width: 200px;
   margin: 10px auto;
@@ -117,4 +130,10 @@ html, body {
   color: #ffeb3b;
   font-weight: bold;
   margin: 8px 0;
+}
+
+#chestRewards {
+  margin: 10px 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
