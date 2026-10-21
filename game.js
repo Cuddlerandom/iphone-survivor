@@ -215,16 +215,17 @@ function killDeadEnemies() {
   }
 }
 
+// 1 Waffe = 1 Stat
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
-  if (key === 'pistole') return ' (Evo: Schaden 22+ & 2 Schüsse)';
-  if (key === 'shotgun') return ' (Evo: Area 1.5+ & Level 3)';
-  if (key === 'katana') return ' (Evo: Area 1.4+ & Level 3)';
-  if (key === 'orbit') return ' (Evo: Area 1.6+ & Level 4)';
-  if (key === 'lightning') return ' (Evo: Crit 15%+ & Level 3)';
-  if (key === 'aura') return ' (Evo: Area 1.5+ & Level 3)';
-  if (key === 'boomerang') return ' (Evo: Area 1.4+ & Level 3)';
-  if (key === 'magnet') return ' (Evo: Pickup 140+)';
+  if (key === 'pistole') return ' (Evo: Schaden 28+)';
+  if (key === 'shotgun') return ' (Evo: Area 1.8+)';
+  if (key === 'katana') return ' (Evo: Area 1.7+)';
+  if (key === 'orbit') return ' (Evo: Area 2.0+)';
+  if (key === 'lightning') return ' (Evo: Crit 20%+)';
+  if (key === 'aura') return ' (Evo: Area 1.8+)';
+  if (key === 'boomerang') return ' (Evo: Area 1.6+)';
+  if (key === 'magnet') return ' (Evo: Pickup 160+)';
   return '';
 }
 
@@ -672,17 +673,18 @@ function checkLevelUp() {
   }
 }
 
+// 1 Waffe = 1 Stat (Waffe muss Level 5 haben)
 function canEvolve(weaponKey) {
   const w = weapons[weaponKey];
-  if (!w.enabled || w.evolved || w.level < 3) return false;
-  if (weaponKey === 'pistole' && player.damage >= 22 && player.projectileCount >= 2) return true;
-  if (weaponKey === 'shotgun' && player.area >= 1.5 && weapons.shotgun.level >= 3) return true;
-  if (weaponKey === 'katana' && player.area >= 1.4 && weapons.katana.level >= 3) return true;
-  if (weaponKey === 'orbit' && player.area >= 1.6 && weapons.orbit.level >= 4) return true;
-  if (weaponKey === 'lightning' && player.critChance >= 0.15 && weapons.lightning.level >= 3) return true;
-  if (weaponKey === 'aura' && player.area >= 1.5 && weapons.aura.level >= 3) return true;
-  if (weaponKey === 'boomerang' && player.area >= 1.4 && weapons.boomerang.level >= 3) return true;
-  if (weaponKey === 'magnet' && player.pickupRange >= 140) return true;
+  if (!w.enabled || w.evolved || w.level < 5) return false;
+  if (weaponKey === 'pistole' && player.damage >= 28) return true;
+  if (weaponKey === 'shotgun' && player.area >= 1.8) return true;
+  if (weaponKey === 'katana' && player.area >= 1.7) return true;
+  if (weaponKey === 'orbit' && player.area >= 2.0) return true;
+  if (weaponKey === 'lightning' && player.critChance >= 0.20) return true;
+  if (weaponKey === 'aura' && player.area >= 1.8) return true;
+  if (weaponKey === 'boomerang' && player.area >= 1.6) return true;
+  if (weaponKey === 'magnet' && player.pickupRange >= 160) return true;
   return false;
 }
 
