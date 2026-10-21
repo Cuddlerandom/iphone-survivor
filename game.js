@@ -75,6 +75,7 @@ let projectiles = [];
 let boomerangs = [];
 let xpOrbs = [];
 let particles = [];
+let damageNumbers = [];
 let score = 0;
 let startTime = Date.now();
 let gameRunning = true;
@@ -173,6 +174,17 @@ function spawnParticles(x, y, color, count = 8) {
   }
 }
 
+function spawnDamageNumber(x, y, amount) {
+  if (amount < 1) return;
+  damageNumbers.push({
+    x: x + (Math.random() - 0.5) * 12,
+    y: y - 10,
+    value: Math.round(amount),
+    life: 0.8,
+    vy: -40
+  });
+}
+
 function getXpValue(type) {
   if (type === 'fast') return 12 + player.level * 3;
   if (type === 'tank') return 22 + player.level * 4;
@@ -268,7 +280,10 @@ function updateOrbit(dt) {
     const dmg = player.damage * 0.4 * weapons.orbit.level * (weapons.orbit.evolved ? 2 : 1);
     for (const e of enemies) {
       const d = Math.hypot(e.x - player.x, e.y - player.y);
-      if (d < orbitRadius + e.radius) e.health -= dmg;
+      if (d < orbitRadius + e.radius) {
+        e.health -= dmg;
+        spawnDamageNumber(e.x, e.y, dmg);
+      }
     }
   }
 }
@@ -286,6 +301,7 @@ function updateLightning(dt) {
     const dmg = player.damage * (weapons.lightning.evolved ? 1.8 : 1.0) * weapons.lightning.level;
     for (const e of targets) {
       e.health -= dmg;
+      spawnDamageNumber(e.x, e.y, dmg);
     }
   }
 }
@@ -298,7 +314,10 @@ function updateAura(dt) {
     const rad = 60 * player.area * (weapons.aura.evolved ? 1.7 : 1);
     const dmg = player.damage * 0.3 * weapons.aura.level * (weapons.aura.evolved ? 2.2 : 1);
     for (const e of enemies) {
-      if (Math.hypot(e.x - player.x, e.y - player.y) < rad) e.health -= dmg;
+      if (Math.hypot(e.x - player.x, e.y - player.y) < rad) {
+        e.health -= dmg;
+        spawnDamageNumber(e.x, e.y, dmg);
+      }
     }
   }
 }
@@ -341,7 +360,9 @@ function updateBoomerang(dt) {
     b.y = player.y + Math.sin(b.angle) * b.dist;
     for (const e of enemies) {
       if (Math.hypot(b.x - e.x, b.y - e.y) < b.radius + e.radius) {
-        e.health -= b.damage * dt * 4;
+        const tickDmg = b.damage * dt * 4;
+        e.health -= tickDmg;
+        if (Math.random() < 0.3) spawnDamageNumber(e.x, e.y, tickDmg);
       }
     }
   }
@@ -364,6 +385,15 @@ function updateParticles(dt) {
     p.y += p.vy;
     p.life -= dt;
     if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function updateDamageNumbers(dt) {
+  for (let i = damageNumbers.length - 1; i >= 0; i--) {
+    const d = damageNumbers[i];
+    d.y += d.vy * dt;
+    d.life -= dt;
+    if (d.life <= 0) damageNumbers.splice(i, 1);
   }
 }
 
@@ -421,6 +451,7 @@ function update(dt) {
   updateBoomerang(dt);
   updateMagnet();
   updateParticles(dt);
+  updateDamageNumbers(dt);
 
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
@@ -434,6 +465,7 @@ function update(dt) {
       const e = enemies[j];
       if (Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius) {
         e.health -= p.damage;
+        spawnDamageNumber(e.x, e.y, p.damage);
         p.hits = (p.hits || 0) + 1;
         if (p.hits > (p.piercing || 0)) projectiles.splice(i, 1);
         if (e.health <= 0) {
@@ -647,6 +679,7 @@ function resetGame() {
   boomerangs = [];
   xpOrbs = [];
   particles = [];
+  damageNumbers = [];
   score = 0;
   startTime = Date.now();
   gameRunning = true;
@@ -766,6 +799,15 @@ function draw() {
   ctx.beginPath();
   ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
   ctx.fill();
+
+  // Damage numbers
+  ctx.font = 'bold 14px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  for (const d of damageNumbers) {
+    const alpha = d.life / 0.8;
+    ctx.fillStyle = `rgba(255, 255, 100, ${alpha})`;
+    ctx.fillText(d.value, d.x, d.y);
+  }
 
   ctx.strokeStyle = 'rgba(255,255,255,0.5)';
   ctx.lineWidth = 3;
