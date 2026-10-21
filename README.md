@@ -9,10 +9,15 @@ Ein einfaches Endless-Survival-Spiel im Stil von **Survivor.io** / **The Tower**
 - Score basierend auf Überlebenszeit
 - Vollbild, kein Zoom, Apple-Meta-Tags
 
-## Spielen
-1. Repo auf GitHub Pages aktivieren (Settings → Pages → Branch main / root)
-2. Oder lokal öffnen und auf iPhone im Safari testen (via local server oder ngrok)
-3. Auf iPhone öffnen: Tippe den Joystick unten links, überlebe so lange wie möglich!
+## Spielen (GitHub Pages)
+1. Einmalig: Repo Settings → Pages → Source: **GitHub Actions** auswählen → Save.
+2. Der Workflow (`.github/workflows/pages.yml`) deployt automatisch bei jedem Push auf `main`.
+3. Nach dem ersten erfolgreichen Run ist das Spiel unter  
+   `https://cuddlerandom.github.io/iphone-survivor/` erreichbar.
+4. Auf dem iPhone im Safari öffnen, Joystick unten links tippen und überleben!
+
+## Lokales Testen
+Einfach die Dateien lokal mit einem Webserver öffnen (z.B. `python -m http.server`) und auf dem iPhone über die lokale IP aufrufen.
 
 Nur auf iPhone getestet und optimiert. Auf anderen Geräten erscheint eine Hinweis-Meldung.
 
