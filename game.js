@@ -57,7 +57,7 @@ let player = {
   lastFire: 0,
   xp: 0,
   level: 1,
-  xpToNext: 40,
+  xpToNext: 30,
   projectileCount: 1,
   projectileSpeed: 8,
   pickupRange: 90,
@@ -193,10 +193,10 @@ function spawnDamageNumber(x, y, amount) {
 }
 
 function getXpValue(type) {
-  if (type === 'fast') return 12 + player.level * 3;
-  if (type === 'tank') return 22 + player.level * 4;
-  if (type === 'boss') return 60 + player.level * 8;
-  return 8 + player.level * 2;
+  if (type === 'fast') return 15 + player.level * 3;
+  if (type === 'tank') return 26 + player.level * 4;
+  if (type === 'boss') return 70 + player.level * 8;
+  return 12 + player.level * 2;
 }
 
 function killDeadEnemies() {
@@ -378,13 +378,12 @@ function updateKatana(dt) {
     return;
   }
 
-  // Look for an enemy in front
   const faceAngle = Math.atan2(joystick.dy, joystick.dx);
   const hasMovement = Math.hypot(joystick.dx, joystick.dy) > 0.1;
   const lookAngle = hasMovement ? faceAngle : (nearestEnemy() ? Math.atan2(nearestEnemy().y - player.y, nearestEnemy().x - player.x) : 0);
 
   const range = 70 * player.area * (weapons.katana.evolved ? 1.4 : 1);
-  const arc = 0.9 + weapons.katana.level * 0.12; // grows with level
+  const arc = 0.9 + weapons.katana.level * 0.12;
 
   let hit = false;
   const dmg = player.damage * 0.85 * weapons.katana.level * (weapons.katana.evolved ? 1.7 : 1);
@@ -413,7 +412,7 @@ function updateOrbit(dt) {
   if (!weapons.orbit.enabled) return;
   weapons.orbit.angle += dt * (weapons.orbit.evolved ? 4 : 2.4);
   weapons.orbit.damageTimer += dt;
-  const orbitRadius = weapons.orbit.radius * player.area * (weapons.orbit.evolved ? 1.5 : 1);
+  const orbitRadius = weapons.orbit.radius * Math.pow(player.area, 0.85) * (weapons.orbit.evolved ? 1.5 : 1);
   const interval = weapons.orbit.evolved ? 0.12 : 0.25;
   if (weapons.orbit.damageTimer > interval) {
     weapons.orbit.damageTimer = 0;
@@ -451,7 +450,7 @@ function updateAura(dt) {
   weapons.aura.timer += dt;
   if (weapons.aura.timer > 0.35) {
     weapons.aura.timer = 0;
-    const rad = 60 * player.area * (weapons.aura.evolved ? 1.7 : 1);
+    const rad = 60 * Math.pow(player.area, 0.85) * (weapons.aura.evolved ? 1.7 : 1);
     const dmg = player.damage * 0.3 * weapons.aura.level * (weapons.aura.evolved ? 2.2 : 1);
     for (const e of enemies) {
       if (Math.hypot(e.x - player.x, e.y - player.y) < rad) {
@@ -550,7 +549,7 @@ function openChest() {
     { text: '🏃 Bewegung +10%', apply: () => { player.speed *= 1.1; } },
     { text: '❤️ Max Leben +25', apply: () => { player.maxHealth += 25; player.health = Math.min(player.health + 25, player.maxHealth); } },
     { text: '🔫 Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 8); } },
-    { text: '💥 Area +15%', apply: () => { player.area *= 1.15; } },
+    { text: '💥 Area +12%', apply: () => { player.area *= 1.12; } },
     { text: '✨ Crit Chance +4%', apply: () => { player.critChance = Math.min(0.45, player.critChance + 0.04); } },
     { text: '🧲 Pickup-Range +20%', apply: () => { player.pickupRange *= 1.2; } }
   ];
@@ -694,7 +693,7 @@ function checkLevelUp() {
   if (player.xp >= player.xpToNext) {
     player.xp -= player.xpToNext;
     player.level++;
-    player.xpToNext = Math.floor(player.xpToNext * 1.32);
+    player.xpToNext = Math.floor(player.xpToNext * 1.28);
     showLevelUp();
     updateUI();
   }
@@ -737,7 +736,7 @@ function showLevelUp() {
   options.push({ text: '❤️ Max Leben +30', apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); } });
   options.push({ text: '🔫 Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 7); } });
   options.push({ text: '🧲 Pickup-Range +25%', apply: () => { player.pickupRange *= 1.25; } });
-  options.push({ text: '💥 Area +18%', apply: () => { player.area *= 1.18; } });
+  options.push({ text: '💥 Area +14%', apply: () => { player.area *= 1.14; } });
   options.push({ text: '✨ Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
 
   if (!weapons.orbit.enabled) options.push({ text: '🔁 Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
@@ -804,7 +803,7 @@ function resetGame() {
     lastFire: 0,
     xp: 0,
     level: 1,
-    xpToNext: 40,
+    xpToNext: 30,
     projectileCount: 1,
     projectileSpeed: 8,
     pickupRange: 90,
@@ -879,7 +878,6 @@ function draw() {
     }
   }
 
-  // Katana slash visual
   if (weapons.katana.enabled && weapons.katana.slashTimer > 0) {
     const range = 70 * player.area * (weapons.katana.evolved ? 1.4 : 1);
     const arc = 0.9 + weapons.katana.level * 0.12;
@@ -891,7 +889,7 @@ function draw() {
   }
 
   if (weapons.orbit.enabled) {
-    const r = weapons.orbit.radius * player.area * (weapons.orbit.evolved ? 1.5 : 1);
+    const r = weapons.orbit.radius * Math.pow(player.area, 0.85) * (weapons.orbit.evolved ? 1.5 : 1);
     ctx.strokeStyle = weapons.orbit.evolved ? 'rgba(255,180,50,0.8)' : 'rgba(100,200,255,0.6)';
     ctx.lineWidth = weapons.orbit.evolved ? 4 : 3;
     ctx.beginPath();
@@ -908,7 +906,7 @@ function draw() {
   }
 
   if (weapons.aura.enabled) {
-    const rad = 60 * player.area * (weapons.aura.evolved ? 1.7 : 1);
+    const rad = 60 * Math.pow(player.area, 0.85) * (weapons.aura.evolved ? 1.7 : 1);
     ctx.fillStyle = weapons.aura.evolved ? 'rgba(255,80,80,0.18)' : 'rgba(80,255,120,0.14)';
     ctx.beginPath();
     ctx.arc(player.x, player.y, rad, 0, Math.PI * 2);
