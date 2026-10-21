@@ -62,7 +62,11 @@ let player = {
   projectileSpeed: 8,
   pickupRange: 90,
   area: 1,
-  critChance: 0.05
+  critChance: 0.05,
+  duration: 1,
+  cooldownRed: 1,
+  knockback: 1,
+  pierce: 0
 };
 
 let weapons = {
@@ -221,16 +225,16 @@ function killDeadEnemies() {
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
   if (key === 'pistole') return 'Evo mit: Schaden 28+';
-  if (key === 'shotgun') return 'Evo mit: Area 1.8+';
-  if (key === 'katana') return 'Evo mit: Area 1.7+';
-  if (key === 'orbit') return 'Evo mit: Area 2.0+';
-  if (key === 'lightning') return 'Evo mit: Crit 20%+';
-  if (key === 'aura') return 'Evo mit: Area 1.8+';
-  if (key === 'boomerang') return 'Evo mit: Area 1.6+';
+  if (key === 'shotgun') return 'Evo mit: Schaden 32+';
+  if (key === 'katana') return 'Evo mit: Cooldown Red. 1.4+';
+  if (key === 'orbit') return 'Evo mit: Proj. Speed 12+';
+  if (key === 'lightning') return 'Evo mit: Pierce 3+';
+  if (key === 'aura') return 'Evo mit: Duration 1.6+';
+  if (key === 'boomerang') return 'Evo mit: Knockback 1.5+';
   if (key === 'magnet') return 'Evo mit: Pickup 160+';
   if (key === 'mine') return 'Evo mit: Projektil 5+';
   if (key === 'laser') return 'Evo mit: Angriffsspeed hoch';
-  if (key === 'freeze') return 'Evo mit: Crit 25%+';
+  if (key === 'freeze') return 'Evo mit: Duration 1.8+';
   return '';
 }
 
@@ -335,14 +339,15 @@ function shootPistole() {
   if (!target) return;
   const angle = Math.atan2(target.y - player.y, target.x - player.x);
   const dmg = player.damage * (weapons.pistole.evolved ? 2.4 : 1 + (weapons.pistole.level - 1) * 0.2);
+  const speed = player.projectileSpeed;
   projectiles.push({
     x: player.x,
     y: player.y,
-    vx: Math.cos(angle) * player.projectileSpeed,
-    vy: Math.sin(angle) * player.projectileSpeed,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
     damage: dmg,
     radius: weapons.pistole.evolved ? 7 : 4,
-    piercing: weapons.pistole.evolved ? 4 : 0,
+    piercing: (weapons.pistole.evolved ? 4 : 0) + player.pierce,
     hits: 0
   });
 }
@@ -367,8 +372,9 @@ function shootShotgun() {
       radius: 3,
       piercing: 0,
       hits: 0,
-      life: 0.28,
-      isShotgun: true
+      life: 0.28 * player.duration,
+      isShotgun: true,
+      knockback: player.knockback
     });
   }
 }
@@ -376,7 +382,7 @@ function shootShotgun() {
 function updateKatana(dt) {
   if (!weapons.katana.enabled) return;
   weapons.katana.timer += dt;
-  const cooldown = weapons.katana.evolved ? 0.45 : 0.7;
+  const cooldown = (weapons.katana.evolved ? 0.45 : 0.7) / player.cooldownRed;
   if (weapons.katana.timer < cooldown) {
     weapons.katana.slashTimer = Math.max(0, weapons.katana.slashTimer - dt);
     return;
@@ -411,10 +417,11 @@ function updateKatana(dt) {
 
 function updateOrbit(dt) {
   if (!weapons.orbit.enabled) return;
-  weapons.orbit.angle += dt * (weapons.orbit.evolved ? 4 : 2.4);
+  const speedMult = player.projectileSpeed / 8;
+  weapons.orbit.angle += dt * (weapons.orbit.evolved ? 4 : 2.4) * speedMult;
   weapons.orbit.damageTimer += dt;
   const orbitRadius = weapons.orbit.radius * Math.pow(player.area, 0.85) * (weapons.orbit.evolved ? 1.5 : 1);
-  const interval = weapons.orbit.evolved ? 0.12 : 0.25;
+  const interval = (weapons.orbit.evolved ? 0.12 : 0.25) / player.cooldownRed;
   if (weapons.orbit.damageTimer > interval) {
     weapons.orbit.damageTimer = 0;
     const dmg = player.damage * 0.4 * weapons.orbit.level * (weapons.orbit.evolved ? 2 : 1);
@@ -431,10 +438,10 @@ function updateOrbit(dt) {
 function updateLightning(dt) {
   if (!weapons.lightning.enabled) return;
   weapons.lightning.timer += dt;
-  const interval = weapons.lightning.evolved ? 0.7 : 1.3;
+  const interval = (weapons.lightning.evolved ? 0.7 : 1.3) / player.cooldownRed;
   if (weapons.lightning.timer > interval) {
     weapons.lightning.timer = 0;
-    const maxTargets = weapons.lightning.evolved ? 6 : 3 + weapons.lightning.level;
+    const maxTargets = (weapons.lightning.evolved ? 6 : 3 + weapons.lightning.level) + player.pierce;
     const targets = enemies.slice().sort((a, b) => 
       Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y)
     ).slice(0, maxTargets);
@@ -449,9 +456,9 @@ function updateLightning(dt) {
 function updateAura(dt) {
   if (!weapons.aura.enabled) return;
   weapons.aura.timer += dt;
-  if (weapons.aura.timer > 0.35) {
+  if (weapons.aura.timer > 0.35 / player.cooldownRed) {
     weapons.aura.timer = 0;
-    const rad = 60 * Math.pow(player.area, 0.85) * (weapons.aura.evolved ? 1.7 : 1);
+    const rad = 60 * Math.pow(player.area, 0.85) * (weapons.aura.evolved ? 1.7 : 1) * player.duration;
     const dmg = player.damage * 0.3 * weapons.aura.level * (weapons.aura.evolved ? 2.2 : 1);
     for (const e of enemies) {
       if (Math.hypot(e.x - player.x, e.y - player.y) < rad) {
@@ -465,7 +472,7 @@ function updateAura(dt) {
 function updateBoomerang(dt) {
   if (!weapons.boomerang.enabled) return;
   weapons.boomerang.timer += dt;
-  const interval = weapons.boomerang.evolved ? 1.2 : 1.8;
+  const interval = (weapons.boomerang.evolved ? 1.2 : 1.8) / player.cooldownRed;
   if (weapons.boomerang.timer > interval) {
     weapons.boomerang.timer = 0;
     const count = 1 + Math.floor(weapons.boomerang.level / 2);
@@ -476,7 +483,7 @@ function updateBoomerang(dt) {
         y: player.y,
         angle,
         dist: 0,
-        maxDist: 120 + weapons.boomerang.level * 20,
+        maxDist: (120 + weapons.boomerang.level * 20) * player.knockback,
         returning: false,
         damage: player.damage * (weapons.boomerang.evolved ? 1.6 : 0.9) * weapons.boomerang.level,
         radius: 8
@@ -485,7 +492,7 @@ function updateBoomerang(dt) {
   }
   for (let i = boomerangs.length - 1; i >= 0; i--) {
     const b = boomerangs[i];
-    const speed = weapons.boomerang.evolved ? 180 : 140;
+    const speed = (weapons.boomerang.evolved ? 180 : 140) * (player.projectileSpeed / 8);
     if (!b.returning) {
       b.dist += speed * dt;
       if (b.dist >= b.maxDist) b.returning = true;
@@ -511,7 +518,7 @@ function updateBoomerang(dt) {
 function updateMine(dt) {
   if (!weapons.mine.enabled) return;
   weapons.mine.timer += dt;
-  const interval = weapons.mine.evolved ? 1.8 : 2.6;
+  const interval = (weapons.mine.evolved ? 1.8 : 2.6) / player.cooldownRed;
   if (weapons.mine.timer > interval) {
     weapons.mine.timer = 0;
     const count = 1 + Math.floor(player.projectileCount / 2);
@@ -522,7 +529,7 @@ function updateMine(dt) {
         x: player.x + Math.cos(angle) * dist,
         y: player.y + Math.sin(angle) * dist,
         radius: 8,
-        life: 8,
+        life: 8 * player.duration,
         damage: player.damage * 1.4 * weapons.mine.level * (weapons.mine.evolved ? 1.6 : 1)
       });
     }
@@ -549,7 +556,7 @@ function updateMine(dt) {
 function updateLaser(dt) {
   if (!weapons.laser.enabled) return;
   weapons.laser.timer += dt;
-  const interval = Math.max(0.12, 0.45 - (1 - player.fireRate) * 0.4);
+  const interval = Math.max(0.12, (0.45 - (1 - player.fireRate) * 0.4) / player.cooldownRed);
   if (weapons.laser.timer > interval) {
     weapons.laser.timer = 0;
     const target = nearestEnemy();
@@ -572,11 +579,11 @@ function updateLaser(dt) {
 function updateFreeze(dt) {
   if (!weapons.freeze.enabled) return;
   weapons.freeze.timer += dt;
-  const interval = weapons.freeze.evolved ? 1.4 : 2.2;
+  const interval = (weapons.freeze.evolved ? 1.4 : 2.2) / player.cooldownRed;
   if (weapons.freeze.timer > interval) {
     weapons.freeze.timer = 0;
     const rad = 90 * Math.pow(player.area, 0.7);
-    const slowDuration = 1.2 + player.critChance * 4;
+    const slowDuration = (1.2 + player.critChance * 4) * player.duration;
     for (const e of enemies) {
       if (Math.hypot(e.x - player.x, e.y - player.y) < rad) {
         e.slowTimer = Math.max(e.slowTimer || 0, slowDuration);
@@ -631,7 +638,12 @@ function openChest() {
     { text: '🔫 Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 8); } },
     { text: '💥 Area +12%', apply: () => { player.area *= 1.12; } },
     { text: '✨ Crit Chance +4%', apply: () => { player.critChance = Math.min(0.45, player.critChance + 0.04); } },
-    { text: '🧲 Pickup-Range +20%', apply: () => { player.pickupRange *= 1.2; } }
+    { text: '🧲 Pickup-Range +20%', apply: () => { player.pickupRange *= 1.2; } },
+    { text: '🚀 Proj. Speed +15%', apply: () => { player.projectileSpeed *= 1.15; } },
+    { text: '⏱ Duration +15%', apply: () => { player.duration *= 1.15; } },
+    { text: '⏭ Cooldown Red. +12%', apply: () => { player.cooldownRed *= 1.12; } },
+    { text: '💨 Knockback +20%', apply: () => { player.knockback *= 1.2; } },
+    { text: '🔫 Pierce +1', apply: () => { player.pierce = Math.min(player.pierce + 1, 6); } }
   ];
 
   const chosen = [];
@@ -702,12 +714,19 @@ function update(dt) {
           const dist = Math.hypot(e.x - player.x, e.y - player.y);
           const falloff = Math.max(0.25, 1.6 - dist / 90);
           dmg *= falloff;
+          if (p.knockback > 1) {
+            const angle = Math.atan2(e.y - player.y, e.x - player.x);
+            e.x += Math.cos(angle) * 8 * p.knockback;
+            e.y += Math.sin(angle) * 8 * p.knockback;
+          }
         }
         e.health -= dmg;
         spawnDamageNumber(e.x, e.y, dmg);
         p.hits = (p.hits || 0) + 1;
-        if (p.hits > (p.piercing || 0)) projectiles.splice(i, 1);
-        if (p.hits > (p.piercing || 0)) break;
+        if (p.hits > (p.piercing || 0)) {
+          projectiles.splice(i, 1);
+          break;
+        }
       }
     }
   }
@@ -788,16 +807,16 @@ function canEvolve(weaponKey) {
   const w = weapons[weaponKey];
   if (!w.enabled || w.evolved || w.level < 5) return false;
   if (weaponKey === 'pistole' && player.damage >= 28) return true;
-  if (weaponKey === 'shotgun' && player.area >= 1.8) return true;
-  if (weaponKey === 'katana' && player.area >= 1.7) return true;
-  if (weaponKey === 'orbit' && player.area >= 2.0) return true;
-  if (weaponKey === 'lightning' && player.critChance >= 0.20) return true;
-  if (weaponKey === 'aura' && player.area >= 1.8) return true;
-  if (weaponKey === 'boomerang' && player.area >= 1.6) return true;
+  if (weaponKey === 'shotgun' && player.damage >= 32) return true;
+  if (weaponKey === 'katana' && player.cooldownRed >= 1.4) return true;
+  if (weaponKey === 'orbit' && player.projectileSpeed >= 12) return true;
+  if (weaponKey === 'lightning' && player.pierce >= 3) return true;
+  if (weaponKey === 'aura' && player.duration >= 1.6) return true;
+  if (weaponKey === 'boomerang' && player.knockback >= 1.5) return true;
   if (weaponKey === 'magnet' && player.pickupRange >= 160) return true;
   if (weaponKey === 'mine' && player.projectileCount >= 5) return true;
   if (weaponKey === 'laser' && player.fireRate <= 0.35) return true;
-  if (weaponKey === 'freeze' && player.critChance >= 0.25) return true;
+  if (weaponKey === 'freeze' && player.duration >= 1.8) return true;
   return false;
 }
 
@@ -828,6 +847,11 @@ function showLevelUp() {
   options.push({ text: '🧲 Pickup-Range +25%', apply: () => { player.pickupRange *= 1.25; } });
   options.push({ text: '💥 Area +14%', apply: () => { player.area *= 1.14; } });
   options.push({ text: '✨ Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
+  options.push({ text: '🚀 Proj. Speed +18%', apply: () => { player.projectileSpeed *= 1.18; } });
+  options.push({ text: '⏱ Duration +18%', apply: () => { player.duration *= 1.18; } });
+  options.push({ text: '⏭ Cooldown Red. +15%', apply: () => { player.cooldownRed *= 1.15; } });
+  options.push({ text: '💨 Knockback +25%', apply: () => { player.knockback *= 1.25; } });
+  options.push({ text: '🔫 Pierce +1', apply: () => { player.pierce = Math.min(player.pierce + 1, 6); } });
 
   if (!weapons.orbit.enabled) options.push({ text: '🔁 Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
   else if (weapons.orbit.level < 8) options.push({ text: '🔁 Orbit Level +1', hint: getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
@@ -907,7 +931,11 @@ function resetGame() {
     projectileSpeed: 8,
     pickupRange: 90,
     area: 1,
-    critChance: 0.05
+    critChance: 0.05,
+    duration: 1,
+    cooldownRed: 1,
+    knockback: 1,
+    pierce: 0
   };
   applyStartingWeapon(startingWeapon);
   enemies = [];
@@ -1013,7 +1041,7 @@ function draw() {
   }
 
   if (weapons.aura.enabled) {
-    const rad = 60 * Math.pow(player.area, 0.85) * (weapons.aura.evolved ? 1.7 : 1);
+    const rad = 60 * Math.pow(player.area, 0.85) * (weapons.aura.evolved ? 1.7 : 1) * player.duration;
     ctx.fillStyle = weapons.aura.evolved ? 'rgba(255,80,80,0.18)' : 'rgba(80,255,120,0.14)';
     ctx.beginPath();
     ctx.arc(player.x, player.y, rad, 0, Math.PI * 2);
