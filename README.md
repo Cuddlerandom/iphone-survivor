@@ -22,3 +22,5 @@ Einfach die Dateien lokal mit einem Webserver öffnen (z.B. `python -m http.serv
 Nur auf iPhone getestet und optimiert. Auf anderen Geräten erscheint eine Hinweis-Meldung.
 
 Viel Spaß!
+
+<!-- trigger -->
