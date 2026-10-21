@@ -354,7 +354,7 @@ function shootShotgun() {
   const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
   const pellets = 5 + Math.floor(weapons.shotgun.level / 1.5);
   const spread = 0.75;
-  const baseDmg = player.damage * 0.22 * (weapons.shotgun.evolved ? 1.6 : 1);
+  const baseDmg = player.damage * 0.3 * (weapons.shotgun.evolved ? 1.6 : 1);
   for (let i = 0; i < pellets; i++) {
     const offset = (i - (pellets - 1) / 2) * (spread / Math.max(1, pellets - 1));
     const angle = baseAngle + offset;
@@ -557,7 +557,6 @@ function updateLaser(dt) {
     const dmg = player.damage * 0.35 * weapons.laser.level * (weapons.laser.evolved ? 1.8 : 1);
     target.health -= dmg;
     spawnDamageNumber(target.x, target.y, dmg);
-    // visual beam
     particles.push({
       x: (player.x + target.x) / 2,
       y: (player.y + target.y) / 2,
@@ -979,7 +978,6 @@ function draw() {
     }
   }
 
-  // Mines
   ctx.fillStyle = '#ff8800';
   for (const m of mines) {
     ctx.beginPath();
