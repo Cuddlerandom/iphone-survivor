@@ -71,7 +71,7 @@ let player = {
 
 let weapons = {
   pistole: { level: 1, enabled: true, evolved: false },
-  mp: { level: 0, enabled: false, evolved: false },
+  mp: { level: 0, enabled: false, evolved: false, timer: 0 },
   shotgun: { level: 0, enabled: false, evolved: false },
   katana: { level: 0, enabled: false, angle: 0, timer: 0, slashTimer: 0, evolved: false },
   orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false },
@@ -360,15 +360,15 @@ function shootMP() {
   if (!target) return;
   const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
   const count = weapons.mp.evolved ? 3 : 1 + Math.floor(weapons.mp.level / 2);
-  const dmg = player.damage * 0.45 * (weapons.mp.evolved ? 1.7 : 1) * weapons.mp.level;
+  const dmg = player.damage * 0.28 * (weapons.mp.evolved ? 1.5 : 1) * weapons.mp.level;
   for (let i = 0; i < count; i++) {
     const offset = (i - (count - 1) / 2) * 0.18;
     const angle = baseAngle + offset;
     projectiles.push({
       x: player.x,
       y: player.y,
-      vx: Math.cos(angle) * (player.projectileSpeed * 0.9),
-      vy: Math.sin(angle) * (player.projectileSpeed * 0.9),
+      vx: Math.cos(angle) * (player.projectileSpeed * 0.95),
+      vy: Math.sin(angle) * (player.projectileSpeed * 0.95),
       damage: dmg,
       radius: weapons.mp.evolved ? 5 : 3.5,
       piercing: player.pierce,
@@ -698,9 +698,17 @@ function update(dt) {
   player.lastFire += dt;
   if (player.lastFire >= player.fireRate) {
     if (weapons.pistole.enabled) shootPistole();
-    if (weapons.mp.enabled) shootMP();
     if (weapons.shotgun.enabled) shootShotgun();
     player.lastFire = 0;
+  }
+
+  if (weapons.mp.enabled) {
+    weapons.mp.timer += dt;
+    const mpRate = (weapons.mp.evolved ? 0.22 : 0.32) / player.cooldownRed;
+    if (weapons.mp.timer >= mpRate) {
+      shootMP();
+      weapons.mp.timer = 0;
+    }
   }
 
   updateKatana(dt);
