@@ -218,14 +218,14 @@ function killDeadEnemies() {
 // 1 Waffe = 1 Stat
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
-  if (key === 'pistole') return ' (Evo: Schaden 28+)';
-  if (key === 'shotgun') return ' (Evo: Area 1.8+)';
-  if (key === 'katana') return ' (Evo: Area 1.7+)';
-  if (key === 'orbit') return ' (Evo: Area 2.0+)';
-  if (key === 'lightning') return ' (Evo: Crit 20%+)';
-  if (key === 'aura') return ' (Evo: Area 1.8+)';
-  if (key === 'boomerang') return ' (Evo: Area 1.6+)';
-  if (key === 'magnet') return ' (Evo: Pickup 160+)';
+  if (key === 'pistole') return 'Evo mit: Schaden 28+';
+  if (key === 'shotgun') return 'Evo mit: Area 1.8+';
+  if (key === 'katana') return 'Evo mit: Area 1.7+';
+  if (key === 'orbit') return 'Evo mit: Area 2.0+';
+  if (key === 'lightning') return 'Evo mit: Crit 20%+';
+  if (key === 'aura') return 'Evo mit: Area 1.8+';
+  if (key === 'boomerang') return 'Evo mit: Area 1.6+';
+  if (key === 'magnet') return 'Evo mit: Pickup 160+';
   return '';
 }
 
@@ -714,23 +714,23 @@ function showLevelUp() {
   options.push({ text: '✨ Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
 
   if (!weapons.orbit.enabled) options.push({ text: '🔁 Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
-  else if (weapons.orbit.level < 8) options.push({ text: '🔁 Orbit Level +1' + getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
+  else if (weapons.orbit.level < 8) options.push({ text: '🔁 Orbit Level +1', hint: getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
 
   if (!weapons.lightning.enabled) options.push({ text: '⚡ Lightning freischalten', apply: () => { weapons.lightning.enabled = true; weapons.lightning.level = 1; } });
-  else if (weapons.lightning.level < 6) options.push({ text: '⚡ Lightning Level +1' + getEvolveHint('lightning'), apply: () => { weapons.lightning.level++; } });
+  else if (weapons.lightning.level < 6) options.push({ text: '⚡ Lightning Level +1', hint: getEvolveHint('lightning'), apply: () => { weapons.lightning.level++; } });
 
   if (!weapons.aura.enabled) options.push({ text: '💠 Aura freischalten', apply: () => { weapons.aura.enabled = true; weapons.aura.level = 1; } });
-  else if (weapons.aura.level < 6) options.push({ text: '💠 Aura Level +1' + getEvolveHint('aura'), apply: () => { weapons.aura.level++; } });
+  else if (weapons.aura.level < 6) options.push({ text: '💠 Aura Level +1', hint: getEvolveHint('aura'), apply: () => { weapons.aura.level++; } });
 
   if (!weapons.boomerang.enabled) options.push({ text: '🔄 Boomerang freischalten', apply: () => { weapons.boomerang.enabled = true; weapons.boomerang.level = 1; } });
-  else if (weapons.boomerang.level < 6) options.push({ text: '🔄 Boomerang Level +1' + getEvolveHint('boomerang'), apply: () => { weapons.boomerang.level++; } });
+  else if (weapons.boomerang.level < 6) options.push({ text: '🔄 Boomerang Level +1', hint: getEvolveHint('boomerang'), apply: () => { weapons.boomerang.level++; } });
 
   if (!weapons.magnet.enabled) options.push({ text: '🧲 Magnet freischalten', apply: () => { weapons.magnet.enabled = true; weapons.magnet.level = 1; } });
-  else if (weapons.magnet.level < 5) options.push({ text: '🧲 Magnet Level +1' + getEvolveHint('magnet'), apply: () => { weapons.magnet.level++; } });
+  else if (weapons.magnet.level < 5) options.push({ text: '🧲 Magnet Level +1', hint: getEvolveHint('magnet'), apply: () => { weapons.magnet.level++; } });
 
-  if (weapons.pistole.enabled && weapons.pistole.level < 8) options.push({ text: '🔫 Pistole Level +1' + getEvolveHint('pistole'), apply: () => { weapons.pistole.level++; } });
-  if (weapons.shotgun.enabled && weapons.shotgun.level < 6) options.push({ text: '💥 Shotgun Level +1' + getEvolveHint('shotgun'), apply: () => { weapons.shotgun.level++; } });
-  if (weapons.katana.enabled && weapons.katana.level < 6) options.push({ text: '⚔️ Katana Level +1' + getEvolveHint('katana'), apply: () => { weapons.katana.level++; } });
+  if (weapons.pistole.enabled && weapons.pistole.level < 8) options.push({ text: '🔫 Pistole Level +1', hint: getEvolveHint('pistole'), apply: () => { weapons.pistole.level++; } });
+  if (weapons.shotgun.enabled && weapons.shotgun.level < 6) options.push({ text: '💥 Shotgun Level +1', hint: getEvolveHint('shotgun'), apply: () => { weapons.shotgun.level++; } });
+  if (weapons.katana.enabled && weapons.katana.level < 6) options.push({ text: '⚔️ Katana Level +1', hint: getEvolveHint('katana'), apply: () => { weapons.katana.level++; } });
 
   options.sort(() => Math.random() - 0.5);
   const evo = options.filter(o => o.text.includes('✨'));
@@ -739,7 +739,8 @@ function showLevelUp() {
 
   for (const opt of chosen) {
     const btn = document.createElement('button');
-    btn.textContent = opt.text;
+    const hintHtml = opt.hint ? `<span class="evo-hint">${opt.hint}</span>` : '';
+    btn.innerHTML = opt.text + hintHtml;
     btn.onclick = () => {
       opt.apply();
       levelUpModal.classList.add('hidden');
