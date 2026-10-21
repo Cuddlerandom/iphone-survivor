@@ -71,6 +71,7 @@ let player = {
 
 let weapons = {
   pistole: { level: 1, enabled: true, evolved: false },
+  mp: { level: 0, enabled: false, evolved: false },
   shotgun: { level: 0, enabled: false, evolved: false },
   katana: { level: 0, enabled: false, angle: 0, timer: 0, slashTimer: 0, evolved: false },
   orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false },
@@ -224,7 +225,8 @@ function killDeadEnemies() {
 
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
-  if (key === 'pistole') return 'Evo mit: Schaden 28+';
+  if (key === 'pistole' && weapons.mp.enabled) return 'Evo mit: MP Level 5+';
+  if (key === 'mp' && weapons.pistole.enabled) return 'Evo mit: Pistole Level 5+';
   if (key === 'shotgun') return 'Evo mit: Schaden 32+';
   if (key === 'katana') return 'Evo mit: Cooldown Red. 1.4+';
   if (key === 'orbit') return 'Evo mit: Proj. Speed 12+';
@@ -338,7 +340,7 @@ function shootPistole() {
   const target = nearestEnemy();
   if (!target) return;
   const angle = Math.atan2(target.y - player.y, target.x - player.x);
-  const dmg = player.damage * (weapons.pistole.evolved ? 2.4 : 1 + (weapons.pistole.level - 1) * 0.2);
+  const dmg = player.damage * (weapons.pistole.evolved ? 2.8 : 1 + (weapons.pistole.level - 1) * 0.2);
   const speed = player.projectileSpeed;
   projectiles.push({
     x: player.x,
@@ -346,10 +348,33 @@ function shootPistole() {
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     damage: dmg,
-    radius: weapons.pistole.evolved ? 7 : 4,
-    piercing: (weapons.pistole.evolved ? 4 : 0) + player.pierce,
+    radius: weapons.pistole.evolved ? 8 : 4,
+    piercing: (weapons.pistole.evolved ? 5 : 0) + player.pierce,
     hits: 0
   });
+}
+
+function shootMP() {
+  if (!weapons.mp.enabled) return;
+  const target = nearestEnemy();
+  if (!target) return;
+  const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  const count = weapons.mp.evolved ? 3 : 1 + Math.floor(weapons.mp.level / 2);
+  const dmg = player.damage * 0.45 * (weapons.mp.evolved ? 1.7 : 1) * weapons.mp.level;
+  for (let i = 0; i < count; i++) {
+    const offset = (i - (count - 1) / 2) * 0.18;
+    const angle = baseAngle + offset;
+    projectiles.push({
+      x: player.x,
+      y: player.y,
+      vx: Math.cos(angle) * (player.projectileSpeed * 0.9),
+      vy: Math.sin(angle) * (player.projectileSpeed * 0.9),
+      damage: dmg,
+      radius: weapons.mp.evolved ? 5 : 3.5,
+      piercing: player.pierce,
+      hits: 0
+    });
+  }
 }
 
 function shootShotgun() {
@@ -673,6 +698,7 @@ function update(dt) {
   player.lastFire += dt;
   if (player.lastFire >= player.fireRate) {
     if (weapons.pistole.enabled) shootPistole();
+    if (weapons.mp.enabled) shootMP();
     if (weapons.shotgun.enabled) shootShotgun();
     player.lastFire = 0;
   }
@@ -803,10 +829,15 @@ function checkLevelUp() {
   }
 }
 
+function canEvolveMustang() {
+  return weapons.pistole.enabled && weapons.mp.enabled &&
+         weapons.pistole.level >= 5 && weapons.mp.level >= 5 &&
+         !weapons.pistole.evolved && !weapons.mp.evolved;
+}
+
 function canEvolve(weaponKey) {
   const w = weapons[weaponKey];
   if (!w.enabled || w.evolved || w.level < 5) return false;
-  if (weaponKey === 'pistole' && player.damage >= 28) return true;
   if (weaponKey === 'shotgun' && player.damage >= 32) return true;
   if (weaponKey === 'katana' && player.cooldownRed >= 1.4) return true;
   if (weaponKey === 'orbit' && player.projectileSpeed >= 12) return true;
@@ -827,7 +858,16 @@ function showLevelUp() {
 
   const options = [];
 
-  if (canEvolve('pistole')) options.push({ text: '✨🔫 Pistole → Magnum', apply: () => { weapons.pistole.evolved = true; } });
+  if (canEvolveMustang()) {
+    options.push({
+      text: '✨🔫+MP → Mustang & Sally',
+      apply: () => {
+        weapons.pistole.evolved = true;
+        weapons.mp.evolved = true;
+      }
+    });
+  }
+
   if (canEvolve('shotgun')) options.push({ text: '✨💥 Shotgun → Boomstick', apply: () => { weapons.shotgun.evolved = true; } });
   if (canEvolve('katana')) options.push({ text: '✨⚔️ Katana → Excalibur', apply: () => { weapons.katana.evolved = true; } });
   if (canEvolve('orbit')) options.push({ text: '✨🔁 Orbit → Blades', apply: () => { weapons.orbit.evolved = true; } });
@@ -852,6 +892,9 @@ function showLevelUp() {
   options.push({ text: '⏭ Cooldown Red. +15%', apply: () => { player.cooldownRed *= 1.15; } });
   options.push({ text: '💨 Knockback +25%', apply: () => { player.knockback *= 1.25; } });
   options.push({ text: '🔫 Pierce +1', apply: () => { player.pierce = Math.min(player.pierce + 1, 6); } });
+
+  if (!weapons.mp.enabled) options.push({ text: '🔫 MP freischalten', apply: () => { weapons.mp.enabled = true; weapons.mp.level = 1; } });
+  else if (weapons.mp.level < 6) options.push({ text: '🔫 MP Level +1', hint: getEvolveHint('mp'), apply: () => { weapons.mp.level++; } });
 
   if (!weapons.orbit.enabled) options.push({ text: '🔁 Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
   else if (weapons.orbit.level < 8) options.push({ text: '🔁 Orbit Level +1', hint: getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
