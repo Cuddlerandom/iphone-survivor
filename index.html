@@ -11,7 +11,7 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <div id="ui">
+  <div id="ui" class="hidden">
     <div id="score">Score: 0</div>
     <div id="level">Level: 1</div>
     <div id="highscore">Best: 0</div>
@@ -19,7 +19,13 @@
     <div id="xpBar"><div id="xpFill"></div></div>
     <div id="xpText">XP: 0 / 40</div>
   </div>
-  <button id="pauseBtn">⏸</button>
+  <button id="pauseBtn" class="hidden">⏸</button>
+  <div id="weaponSelect">
+    <h2>Wähle deine Startwaffe</h2>
+    <button class="weaponBtn" data-weapon="projectile">Projektil<br><small>Single-Target, präzise</small></button>
+    <button class="weaponBtn" data-weapon="orbit">Orbit<br><small>Defensive, Nahbereich</small></button>
+    <button class="weaponBtn" data-weapon="lightning">Lightning<br><small>Multi-Target, Burst</small></button>
+  </div>
   <div id="levelUpModal" class="hidden">
     <h2>Level Up!</h2>
     <div id="upgrades"></div>
