@@ -35,11 +35,21 @@ let player = {
   health: 100,
   maxHealth: 100,
   damage: 10,
-  fireRate: 0.5, // seconds
+  fireRate: 0.6,
   lastFire: 0,
   xp: 0,
   level: 1,
-  xpToNext: 50
+  xpToNext: 40,
+  projectileCount: 1,
+  projectileSpeed: 8,
+  pickupRange: 80,
+  area: 1
+};
+
+let weapons = {
+  projectile: { level: 1, enabled: true },
+  orbit: { level: 0, enabled: false, angle: 0, radius: 40, damageTimer: 0 },
+  spread: { level: 0, enabled: false }
 };
 
 let enemies = [];
@@ -133,12 +143,13 @@ function spawnEnemy() {
   else if (side === 1) { x = canvas.width + 20; y = Math.random() * canvas.height; }
   else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + 20; }
   else { x = -20; y = Math.random() * canvas.height; }
+  const baseHp = 20 + player.level * 6;
   enemies.push({
     x, y,
     radius: 12,
-    speed: 1 + Math.random() * 0.5,
-    health: 20 + player.level * 5,
-    maxHealth: 20 + player.level * 5
+    speed: 0.8 + Math.random() * 0.4,
+    health: baseHp,
+    maxHealth: baseHp
   });
 }
 
@@ -155,18 +166,41 @@ function nearestEnemy() {
   return nearest;
 }
 
-function shoot() {
+function shootProjectiles() {
+  if (!weapons.projectile.enabled) return;
   const target = nearestEnemy();
   if (!target) return;
-  const angle = Math.atan2(target.y - player.y, target.x - player.x);
-  projectiles.push({
-    x: player.x,
-    y: player.y,
-    vx: Math.cos(angle) * 8,
-    vy: Math.sin(angle) * 8,
-    damage: player.damage,
-    radius: 4
-  });
+  const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  const count = player.projectileCount;
+  const spread = weapons.spread.enabled ? 0.4 : 0.15;
+  for (let i = 0; i < count; i++) {
+    const offset = (i - (count - 1) / 2) * spread;
+    const angle = baseAngle + offset;
+    projectiles.push({
+      x: player.x,
+      y: player.y,
+      vx: Math.cos(angle) * player.projectileSpeed,
+      vy: Math.sin(angle) * player.projectileSpeed,
+      damage: player.damage * (1 + (weapons.projectile.level - 1) * 0.2),
+      radius: 4 + weapons.projectile.level
+    });
+  }
+}
+
+function updateOrbit(dt) {
+  if (!weapons.orbit.enabled) return;
+  weapons.orbit.angle += dt * 2;
+  weapons.orbit.damageTimer += dt;
+  const orbitRadius = weapons.orbit.radius * player.area;
+  if (weapons.orbit.damageTimer > 0.25) {
+    weapons.orbit.damageTimer = 0;
+    for (const e of enemies) {
+      const d = Math.hypot(e.x - player.x, e.y - player.y);
+      if (d < orbitRadius + e.radius) {
+        e.health -= player.damage * 0.4 * weapons.orbit.level;
+      }
+    }
+  }
 }
 
 function update(dt) {
@@ -181,16 +215,18 @@ function update(dt) {
   // Auto fire
   player.lastFire += dt;
   if (player.lastFire >= player.fireRate) {
-    shoot();
+    shootProjectiles();
     player.lastFire = 0;
   }
+
+  updateOrbit(dt);
 
   // Projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.x += p.vx;
     p.y += p.vy;
-    if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+    if (p.x < -50 || p.x > canvas.width + 50 || p.y < -50 || p.y > canvas.height + 50) {
       projectiles.splice(i, 1);
       continue;
     }
@@ -200,8 +236,7 @@ function update(dt) {
         e.health -= p.damage;
         projectiles.splice(i, 1);
         if (e.health <= 0) {
-          // Drop XP
-          xpOrbs.push({ x: e.x, y: e.y, value: 10 + player.level * 2, radius: 6 });
+          xpOrbs.push({ x: e.x, y: e.y, value: 8 + player.level * 2, radius: 6 });
           enemies.splice(j, 1);
           score += 10;
         }
@@ -217,11 +252,9 @@ function update(dt) {
     e.x += Math.cos(angle) * e.speed;
     e.y += Math.sin(angle) * e.speed;
     if (Math.hypot(e.x - player.x, e.y - player.y) < e.radius + player.radius) {
-      player.health -= 10;
+      player.health -= 8;
       enemies.splice(i, 1);
-      if (player.health <= 0) {
-        gameOver();
-      }
+      if (player.health <= 0) gameOver();
     }
   }
 
@@ -229,10 +262,10 @@ function update(dt) {
   for (let i = xpOrbs.length - 1; i >= 0; i--) {
     const o = xpOrbs[i];
     const d = Math.hypot(o.x - player.x, o.y - player.y);
-    if (d < 80) {
+    if (d < player.pickupRange) {
       const angle = Math.atan2(player.y - o.y, player.x - o.x);
-      o.x += Math.cos(angle) * 4;
-      o.y += Math.sin(angle) * 4;
+      o.x += Math.cos(angle) * 5;
+      o.y += Math.sin(angle) * 5;
     }
     if (d < player.radius + o.radius) {
       player.xp += o.value;
@@ -243,8 +276,10 @@ function update(dt) {
 
   // Spawn
   spawnTimer += dt;
-  if (spawnTimer > Math.max(0.5, 2 - player.level * 0.1)) {
+  const spawnInterval = Math.max(0.35, 1.8 - player.level * 0.08);
+  if (spawnTimer > spawnInterval) {
     spawnEnemy();
+    if (player.level > 5 && Math.random() < 0.3) spawnEnemy();
     spawnTimer = 0;
   }
 
@@ -256,7 +291,7 @@ function checkLevelUp() {
   if (player.xp >= player.xpToNext) {
     player.xp -= player.xpToNext;
     player.level++;
-    player.xpToNext = Math.floor(player.xpToNext * 1.4);
+    player.xpToNext = Math.floor(player.xpToNext * 1.35);
     showLevelUp();
   }
 }
@@ -265,19 +300,40 @@ function showLevelUp() {
   levelUpPending = true;
   levelUpModal.classList.remove('hidden');
   upgradesEl.innerHTML = '';
-  const options = [
-    { text: 'Mehr Schaden (+5)', apply: () => { player.damage += 5; } },
-    { text: 'Schnellere Schüsse', apply: () => { player.fireRate = Math.max(0.2, player.fireRate - 0.1); } },
-    { text: 'Mehr Geschwindigkeit', apply: () => { player.speed += 0.5; } },
-    { text: 'Mehr Leben (+30)', apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); } }
-  ];
+
+  const options = [];
+
+  // Stat bonuses
+  options.push({ text: 'Schaden +20%', apply: () => { player.damage *= 1.2; } });
+  options.push({ text: 'Angriffsgeschw. +15%', apply: () => { player.fireRate = Math.max(0.18, player.fireRate * 0.85); } });
+  options.push({ text: 'Bewegung +15%', apply: () => { player.speed *= 1.15; } });
+  options.push({ text: 'Max Leben +25', apply: () => { player.maxHealth += 25; player.health = Math.min(player.health + 25, player.maxHealth); } });
+  options.push({ text: 'Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 6); } });
+  options.push({ text: 'Pickup-Range +30%', apply: () => { player.pickupRange *= 1.3; } });
+  options.push({ text: 'Area +20%', apply: () => { player.area *= 1.2; } });
+
+  // Weapons
+  if (!weapons.orbit.enabled) {
+    options.push({ text: 'Orbit-Waffe freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
+  } else {
+    options.push({ text: 'Orbit Level +1', apply: () => { weapons.orbit.level++; weapons.orbit.radius += 8; } });
+  }
+
+  if (!weapons.spread.enabled && weapons.projectile.level >= 1) {
+    options.push({ text: 'Spread-Shot freischalten', apply: () => { weapons.spread.enabled = true; } });
+  }
+
+  options.push({ text: 'Projektil Level +1', apply: () => { weapons.projectile.level++; } });
+
   // Shuffle and pick 3
   options.sort(() => Math.random() - 0.5);
-  for (let i = 0; i < 3; i++) {
+  const chosen = options.slice(0, 3);
+
+  for (const opt of chosen) {
     const btn = document.createElement('button');
-    btn.textContent = options[i].text;
+    btn.textContent = opt.text;
     btn.onclick = () => {
-      options[i].apply();
+      opt.apply();
       levelUpModal.classList.add('hidden');
       levelUpPending = false;
     };
@@ -300,7 +356,6 @@ function gameOver() {
 }
 
 restartBtn.onclick = () => {
-  // Reset
   player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
@@ -309,11 +364,20 @@ restartBtn.onclick = () => {
     health: 100,
     maxHealth: 100,
     damage: 10,
-    fireRate: 0.5,
+    fireRate: 0.6,
     lastFire: 0,
     xp: 0,
     level: 1,
-    xpToNext: 50
+    xpToNext: 40,
+    projectileCount: 1,
+    projectileSpeed: 8,
+    pickupRange: 80,
+    area: 1
+  };
+  weapons = {
+    projectile: { level: 1, enabled: true },
+    orbit: { level: 0, enabled: false, angle: 0, radius: 40, damageTimer: 0 },
+    spread: { level: 0, enabled: false }
   };
   enemies = [];
   projectiles = [];
@@ -337,17 +401,34 @@ function draw() {
     ctx.fill();
   }
 
+  // Orbit visual
+  if (weapons.orbit.enabled) {
+    ctx.strokeStyle = 'rgba(100,200,255,0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, weapons.orbit.radius * player.area, 0, Math.PI * 2);
+    ctx.stroke();
+    // small orbiting dots
+    const r = weapons.orbit.radius * player.area;
+    for (let i = 0; i < 4; i++) {
+      const a = weapons.orbit.angle + (i * Math.PI / 2);
+      ctx.fillStyle = '#88ccff';
+      ctx.beginPath();
+      ctx.arc(player.x + Math.cos(a) * r, player.y + Math.sin(a) * r, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   // Enemies
   for (const e of enemies) {
     ctx.fillStyle = '#ff4444';
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
     ctx.fill();
-    // Health bar
     ctx.fillStyle = '#333';
     ctx.fillRect(e.x - 15, e.y - e.radius - 8, 30, 4);
     ctx.fillStyle = '#4caf50';
-    ctx.fillRect(e.x - 15, e.y - e.radius - 8, 30 * (e.health / e.maxHealth), 4);
+    ctx.fillRect(e.x - 15, e.y - e.radius - 8, 30 * Math.max(0, e.health / e.maxHealth), 4);
   }
 
   // Projectiles
@@ -378,7 +459,7 @@ function draw() {
 
 let lastTime = performance.now();
 function loop(now) {
-  const dt = (now - lastTime) / 1000;
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
   updateJoystickPos();
   update(dt);
