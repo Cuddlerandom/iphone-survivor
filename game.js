@@ -225,18 +225,18 @@ function killDeadEnemies() {
 
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
-  if (key === 'pistole' && weapons.mp.enabled) return 'Evo mit: MP Level 5+';
-  if (key === 'mp' && weapons.pistole.enabled) return 'Evo mit: Pistole Level 5+';
-  if (key === 'shotgun') return 'Evo mit: Schaden 32+';
-  if (key === 'katana') return 'Evo mit: Cooldown Red. 1.4+';
-  if (key === 'orbit') return 'Evo mit: Proj. Speed 12+';
-  if (key === 'lightning') return 'Evo mit: Pierce 3+';
-  if (key === 'aura') return 'Evo mit: Duration 1.6+';
-  if (key === 'boomerang') return 'Evo mit: Knockback 1.5+';
-  if (key === 'magnet') return 'Evo mit: Pickup 160+';
-  if (key === 'mine') return 'Evo mit: Projektil 5+';
-  if (key === 'laser') return 'Evo mit: Angriffsspeed hoch';
-  if (key === 'freeze') return 'Evo mit: Duration 1.8+';
+  if (key === 'pistole' && weapons.mp.enabled) return 'Evo mit: MP Level 4+';
+  if (key === 'mp' && weapons.pistole.enabled) return 'Evo mit: Pistole Level 4+';
+  if (key === 'shotgun') return 'Evo mit: Schaden 22+';
+  if (key === 'katana') return 'Evo mit: Cooldown 1.25+';
+  if (key === 'orbit') return 'Evo mit: Proj.Speed 10+';
+  if (key === 'lightning') return 'Evo mit: Pierce 2+';
+  if (key === 'aura') return 'Evo mit: Duration 1.35+';
+  if (key === 'boomerang') return 'Evo mit: Knockback 1.3+';
+  if (key === 'magnet') return 'Evo mit: Pickup 140+';
+  if (key === 'mine') return 'Evo mit: Projektil 4+';
+  if (key === 'laser') return 'Evo mit: Angriffsspeed';
+  if (key === 'freeze') return 'Evo mit: Duration 1.45+';
   return '';
 }
 
@@ -831,23 +831,23 @@ function checkLevelUp() {
 
 function canEvolveMustang() {
   return weapons.pistole.enabled && weapons.mp.enabled &&
-         weapons.pistole.level >= 5 && weapons.mp.level >= 5 &&
+         weapons.pistole.level >= 4 && weapons.mp.level >= 4 &&
          !weapons.pistole.evolved && !weapons.mp.evolved;
 }
 
 function canEvolve(weaponKey) {
   const w = weapons[weaponKey];
-  if (!w.enabled || w.evolved || w.level < 5) return false;
-  if (weaponKey === 'shotgun' && player.damage >= 32) return true;
-  if (weaponKey === 'katana' && player.cooldownRed >= 1.4) return true;
-  if (weaponKey === 'orbit' && player.projectileSpeed >= 12) return true;
-  if (weaponKey === 'lightning' && player.pierce >= 3) return true;
-  if (weaponKey === 'aura' && player.duration >= 1.6) return true;
-  if (weaponKey === 'boomerang' && player.knockback >= 1.5) return true;
-  if (weaponKey === 'magnet' && player.pickupRange >= 160) return true;
-  if (weaponKey === 'mine' && player.projectileCount >= 5) return true;
-  if (weaponKey === 'laser' && player.fireRate <= 0.35) return true;
-  if (weaponKey === 'freeze' && player.duration >= 1.8) return true;
+  if (!w.enabled || w.evolved || w.level < 4) return false;
+  if (weaponKey === 'shotgun' && player.damage >= 22) return true;
+  if (weaponKey === 'katana' && player.cooldownRed >= 1.25) return true;
+  if (weaponKey === 'orbit' && player.projectileSpeed >= 10) return true;
+  if (weaponKey === 'lightning' && player.pierce >= 2) return true;
+  if (weaponKey === 'aura' && player.duration >= 1.35) return true;
+  if (weaponKey === 'boomerang' && player.knockback >= 1.3) return true;
+  if (weaponKey === 'magnet' && player.pickupRange >= 140) return true;
+  if (weaponKey === 'mine' && player.projectileCount >= 4) return true;
+  if (weaponKey === 'laser' && player.fireRate <= 0.42) return true;
+  if (weaponKey === 'freeze' && player.duration >= 1.45) return true;
   return false;
 }
 
