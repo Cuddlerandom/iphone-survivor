@@ -197,6 +197,17 @@ function getXpValue(type) {
   return 8 + player.level * 2;
 }
 
+function getEvolveHint(key) {
+  if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
+  if (key === 'projectile') return ' (Evo: Schaden 30+ & 3 Projektile)';
+  if (key === 'orbit') return ' (Evo: Area 1.9+ & Level 5)';
+  if (key === 'lightning') return ' (Evo: Crit 25%+ & Level 4)';
+  if (key === 'aura') return ' (Evo: Area 1.7+ & Level 4)';
+  if (key === 'boomerang') return ' (Evo: Area 1.6+ & Level 4)';
+  if (key === 'magnet') return ' (Evo: Pickup 180+)';
+  return '';
+}
+
 function updateUI() {
   scoreEl.textContent = 'Score: ' + score;
   levelEl.textContent = 'Level: ' + player.level;
@@ -212,7 +223,6 @@ function updateUI() {
 
 function applyStartingWeapon(key) {
   startingWeapon = key;
-  // Reset all to off
   for (const k in weapons) {
     weapons[k].enabled = false;
     weapons[k].level = 0;
@@ -637,23 +647,23 @@ function showLevelUp() {
   options.push({ text: 'Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
 
   if (!weapons.orbit.enabled) options.push({ text: 'Orbit (Defensive) freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
-  else if (weapons.orbit.level < 8) options.push({ text: 'Orbit Level +1', apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
+  else if (weapons.orbit.level < 8) options.push({ text: 'Orbit Level +1' + getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
 
   if (!weapons.lightning.enabled) options.push({ text: 'Lightning (Multi-Target) freischalten', apply: () => { weapons.lightning.enabled = true; weapons.lightning.level = 1; } });
-  else if (weapons.lightning.level < 6) options.push({ text: 'Lightning Level +1', apply: () => { weapons.lightning.level++; } });
+  else if (weapons.lightning.level < 6) options.push({ text: 'Lightning Level +1' + getEvolveHint('lightning'), apply: () => { weapons.lightning.level++; } });
 
   if (!weapons.aura.enabled) options.push({ text: 'Aura (Close-Range) freischalten', apply: () => { weapons.aura.enabled = true; weapons.aura.level = 1; } });
-  else if (weapons.aura.level < 6) options.push({ text: 'Aura Level +1', apply: () => { weapons.aura.level++; } });
+  else if (weapons.aura.level < 6) options.push({ text: 'Aura Level +1' + getEvolveHint('aura'), apply: () => { weapons.aura.level++; } });
 
   if (!weapons.boomerang.enabled) options.push({ text: 'Boomerang (Area) freischalten', apply: () => { weapons.boomerang.enabled = true; weapons.boomerang.level = 1; } });
-  else if (weapons.boomerang.level < 6) options.push({ text: 'Boomerang Level +1', apply: () => { weapons.boomerang.level++; } });
+  else if (weapons.boomerang.level < 6) options.push({ text: 'Boomerang Level +1' + getEvolveHint('boomerang'), apply: () => { weapons.boomerang.level++; } });
 
   if (!weapons.magnet.enabled) options.push({ text: 'Magnet (Utility) freischalten', apply: () => { weapons.magnet.enabled = true; weapons.magnet.level = 1; } });
-  else if (weapons.magnet.level < 5) options.push({ text: 'Magnet Level +1', apply: () => { weapons.magnet.level++; } });
+  else if (weapons.magnet.level < 5) options.push({ text: 'Magnet Level +1' + getEvolveHint('magnet'), apply: () => { weapons.magnet.level++; } });
 
   if (!weapons.spread.enabled) options.push({ text: 'Spread-Shot freischalten', apply: () => { weapons.spread.enabled = true; } });
 
-  if (weapons.projectile.level < 8) options.push({ text: 'Projektil Level +1', apply: () => { weapons.projectile.level++; } });
+  if (weapons.projectile.enabled && weapons.projectile.level < 8) options.push({ text: 'Projektil Level +1' + getEvolveHint('projectile'), apply: () => { weapons.projectile.level++; } });
 
   options.sort(() => Math.random() - 0.5);
   const evo = options.filter(o => o.text.includes('✨'));
