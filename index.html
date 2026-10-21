@@ -14,15 +14,24 @@
   <div id="ui">
     <div id="score">Score: 0</div>
     <div id="level">Level: 1</div>
+    <div id="highscore">Best: 0</div>
     <div id="healthBar"><div id="healthFill"></div></div>
   </div>
+  <button id="pauseBtn">⏸</button>
   <div id="levelUpModal" class="hidden">
     <h2>Level Up!</h2>
     <div id="upgrades"></div>
   </div>
+  <div id="pauseMenu" class="hidden">
+    <h2>Pause</h2>
+    <button id="resumeBtn">Weiter</button>
+    <button id="restartFromPauseBtn">Neu starten</button>
+  </div>
   <div id="gameOver" class="hidden">
     <h2>Game Over</h2>
     <p>Score: <span id="finalScore"></span></p>
+    <p id="newHighscore" class="hidden">Neuer Highscore!</p>
+    <p>Best: <span id="bestScoreDisplay"></span></p>
     <button id="restartBtn">Neu starten</button>
   </div>
   <div id="iphoneOnly" class="hidden">
