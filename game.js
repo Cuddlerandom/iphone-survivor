@@ -378,16 +378,19 @@ function updateKatana(dt) {
     return;
   }
 
-  const faceAngle = Math.atan2(joystick.dy, joystick.dx);
-  const hasMovement = Math.hypot(joystick.dx, joystick.dy) > 0.1;
-  const lookAngle = hasMovement ? faceAngle : (nearestEnemy() ? Math.atan2(nearestEnemy().y - player.y, nearestEnemy().x - player.x) : 0);
+  // Always aim at the nearest enemy in range
+  const target = nearestEnemy();
+  if (!target) return;
 
   const range = 70 * player.area * (weapons.katana.evolved ? 1.4 : 1);
-  const arc = 0.9 + weapons.katana.level * 0.12;
+  const distToTarget = Math.hypot(target.x - player.x, target.y - player.y);
+  if (distToTarget > range) return;
 
-  let hit = false;
+  const lookAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  const arc = 0.9 + weapons.katana.level * 0.12;
   const dmg = player.damage * 0.85 * weapons.katana.level * (weapons.katana.evolved ? 1.7 : 1);
 
+  let hit = false;
   for (const e of enemies) {
     const d = Math.hypot(e.x - player.x, e.y - player.y);
     if (d > range) continue;
