@@ -21,12 +21,15 @@ const chestModal = document.getElementById('chestModal');
 const chestCountEl = document.getElementById('chestCount');
 const chestRewards = document.getElementById('chestRewards');
 const chestCloseBtn = document.getElementById('chestCloseBtn');
+const weaponSelect = document.getElementById('weaponSelect');
+const ui = document.getElementById('ui');
 const iphoneOnly = document.getElementById('iphoneOnly');
 
 const isIphone = /iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 if (!isIphone) {
   iphoneOnly.classList.remove('hidden');
   canvas.style.display = 'none';
+  weaponSelect.classList.add('hidden');
 } else {
   iphoneOnly.classList.add('hidden');
 }
@@ -39,6 +42,8 @@ resize();
 window.addEventListener('resize', resize);
 
 let highscore = parseInt(localStorage.getItem('iphoneSurvivorHighscore') || '0');
+let startingWeapon = 'projectile';
+let gameStarted = false;
 
 let player = {
   x: canvas.width / 2,
@@ -78,7 +83,7 @@ let particles = [];
 let damageNumbers = [];
 let score = 0;
 let startTime = Date.now();
-let gameRunning = true;
+let gameRunning = false;
 let levelUpPending = false;
 let paused = false;
 let bossTimer = 0;
@@ -110,7 +115,7 @@ canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
 function handleTouchStart(e) {
   e.preventDefault();
-  if (paused || levelUpPending || chestPending) return;
+  if (paused || levelUpPending || chestPending || !gameStarted) return;
   const touch = e.touches[0];
   const rect = canvas.getBoundingClientRect();
   const x = touch.clientX - rect.left;
@@ -204,6 +209,38 @@ function updateUI() {
   xpFill.style.width = xpPct + '%';
   xpText.textContent = 'XP: ' + Math.floor(player.xp) + ' / ' + player.xpToNext;
 }
+
+function applyStartingWeapon(key) {
+  startingWeapon = key;
+  // Reset all to off
+  for (const k in weapons) {
+    weapons[k].enabled = false;
+    weapons[k].level = 0;
+    weapons[k].evolved = false;
+  }
+  weapons[key].enabled = true;
+  weapons[key].level = 1;
+  if (key === 'orbit') weapons.orbit.radius = 45;
+  if (key === 'lightning') weapons.lightning.timer = 0;
+}
+
+function startGame() {
+  gameStarted = true;
+  gameRunning = true;
+  weaponSelect.classList.add('hidden');
+  ui.classList.remove('hidden');
+  pauseBtn.classList.remove('hidden');
+  startTime = Date.now();
+  updateUI();
+}
+
+document.querySelectorAll('.weaponBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const w = btn.getAttribute('data-weapon');
+    applyStartingWeapon(w);
+    startGame();
+  });
+});
 
 let spawnTimer = 0;
 function spawnEnemy(type = 'normal') {
@@ -669,15 +706,7 @@ function resetGame() {
     area: 1,
     critChance: 0.05
   };
-  weapons = {
-    projectile: { level: 1, enabled: true, evolved: false, role: 'Single-Target' },
-    orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false, role: 'Defensive' },
-    spread: { level: 0, enabled: false, evolved: false },
-    lightning: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Multi-Target' },
-    aura: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Close-Range' },
-    boomerang: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Area Control' },
-    magnet: { level: 0, enabled: false, evolved: false, role: 'Utility' }
-  };
+  applyStartingWeapon(startingWeapon);
   enemies = [];
   projectiles = [];
   boomerangs = [];
@@ -715,6 +744,8 @@ resumeBtn.onclick = () => {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!gameStarted) return;
 
   for (const p of particles) {
     const alpha = p.life / p.maxLife;
@@ -832,5 +863,4 @@ function loop(now) {
   draw();
   requestAnimationFrame(loop);
 }
-updateUI();
 requestAnimationFrame(loop);
