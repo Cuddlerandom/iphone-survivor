@@ -346,22 +346,23 @@ function shootShotgun() {
   const target = nearestEnemy();
   if (!target) return;
   const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
-  const pellets = 5 + weapons.shotgun.level;
-  const spread = 0.6;
-  const dmg = player.damage * 0.45 * (weapons.shotgun.evolved ? 1.8 : 1);
+  const pellets = 5 + Math.floor(weapons.shotgun.level / 1.5);
+  const spread = 0.75;
+  const baseDmg = player.damage * 0.22 * (weapons.shotgun.evolved ? 1.6 : 1);
   for (let i = 0; i < pellets; i++) {
-    const offset = (i - (pellets - 1) / 2) * (spread / pellets);
+    const offset = (i - (pellets - 1) / 2) * (spread / Math.max(1, pellets - 1));
     const angle = baseAngle + offset;
     projectiles.push({
       x: player.x,
       y: player.y,
-      vx: Math.cos(angle) * (player.projectileSpeed * 0.85),
-      vy: Math.sin(angle) * (player.projectileSpeed * 0.85),
-      damage: dmg,
+      vx: Math.cos(angle) * (player.projectileSpeed * 0.75),
+      vy: Math.sin(angle) * (player.projectileSpeed * 0.75),
+      damage: baseDmg,
       radius: 3,
       piercing: 0,
       hits: 0,
-      life: 0.35
+      life: 0.28,
+      isShotgun: true
     });
   }
 }
@@ -566,7 +567,6 @@ function update(dt) {
   updateParticles(dt);
   updateDamageNumbers(dt);
 
-  // Remove dead enemies from all damage sources
   killDeadEnemies();
 
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -587,8 +587,14 @@ function update(dt) {
     for (let j = enemies.length - 1; j >= 0; j--) {
       const e = enemies[j];
       if (Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius) {
-        e.health -= p.damage;
-        spawnDamageNumber(e.x, e.y, p.damage);
+        let dmg = p.damage;
+        if (p.isShotgun) {
+          const dist = Math.hypot(e.x - player.x, e.y - player.y);
+          const falloff = Math.max(0.25, 1.6 - dist / 90);
+          dmg *= falloff;
+        }
+        e.health -= dmg;
+        spawnDamageNumber(e.x, e.y, dmg);
         p.hits = (p.hits || 0) + 1;
         if (p.hits > (p.piercing || 0)) projectiles.splice(i, 1);
         if (p.hits > (p.piercing || 0)) break;
@@ -596,7 +602,6 @@ function update(dt) {
     }
   }
 
-  // Check again after projectile hits
   killDeadEnemies();
 
   for (let i = enemies.length - 1; i >= 0; i--) {
