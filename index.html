@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>iPhone Survivor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui">
+    <div id="score">Score: 0</div>
+    <div id="level">Level: 1</div>
+    <div id="healthBar"><div id="healthFill"></div></div>
+  </div>
+  <div id="levelUpModal" class="hidden">
+    <h2>Level Up!</h2>
+    <div id="upgrades"></div>
+  </div>
+  <div id="gameOver" class="hidden">
+    <h2>Game Over</h2>
+    <p>Score: <span id="finalScore"></span></p>
+    <button id="restartBtn">Neu starten</button>
+  </div>
+  <div id="iphoneOnly" class="hidden">
+    <p>Dieses Spiel ist ausschließlich für iPhone optimiert.</p>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
