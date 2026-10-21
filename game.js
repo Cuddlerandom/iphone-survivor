@@ -4,6 +4,8 @@ const scoreEl = document.getElementById('score');
 const levelEl = document.getElementById('level');
 const highscoreEl = document.getElementById('highscore');
 const healthFill = document.getElementById('healthFill');
+const xpFill = document.getElementById('xpFill');
+const xpText = document.getElementById('xpText');
 const levelUpModal = document.getElementById('levelUpModal');
 const upgradesEl = document.getElementById('upgrades');
 const gameOverEl = document.getElementById('gameOver');
@@ -15,6 +17,10 @@ const pauseBtn = document.getElementById('pauseBtn');
 const pauseMenu = document.getElementById('pauseMenu');
 const resumeBtn = document.getElementById('resumeBtn');
 const restartFromPauseBtn = document.getElementById('restartFromPauseBtn');
+const chestModal = document.getElementById('chestModal');
+const chestCountEl = document.getElementById('chestCount');
+const chestRewards = document.getElementById('chestRewards');
+const chestCloseBtn = document.getElementById('chestCloseBtn');
 const iphoneOnly = document.getElementById('iphoneOnly');
 
 const isIphone = /iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -76,6 +82,7 @@ let levelUpPending = false;
 let paused = false;
 let bossTimer = 0;
 let bossCount = 0;
+let chestPending = false;
 
 const joystick = {
   baseX: 80,
@@ -102,7 +109,7 @@ canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
 function handleTouchStart(e) {
   e.preventDefault();
-  if (paused || levelUpPending) return;
+  if (paused || levelUpPending || chestPending) return;
   const touch = e.touches[0];
   const rect = canvas.getBoundingClientRect();
   const x = touch.clientX - rect.left;
@@ -164,6 +171,13 @@ function spawnParticles(x, y, color, count = 8) {
       color
     });
   }
+}
+
+function getXpValue(type) {
+  if (type === 'fast') return 12 + player.level * 3;
+  if (type === 'tank') return 22 + player.level * 4;
+  if (type === 'boss') return 60 + player.level * 8;
+  return 8 + player.level * 2;
 }
 
 let spawnTimer = 0;
@@ -353,8 +367,42 @@ function updateParticles(dt) {
   }
 }
 
+function openChest() {
+  chestPending = true;
+  const counts = [1, 3, 5];
+  const count = counts[Math.floor(Math.random() * counts.length)];
+  chestCountEl.textContent = count;
+  chestRewards.innerHTML = '';
+
+  const possible = [
+    { text: 'Schaden +15%', apply: () => { player.damage *= 1.15; } },
+    { text: 'Angriffsgeschw. +10%', apply: () => { player.fireRate = Math.max(0.14, player.fireRate * 0.9); } },
+    { text: 'Bewegung +10%', apply: () => { player.speed *= 1.1; } },
+    { text: 'Max Leben +25', apply: () => { player.maxHealth += 25; player.health = Math.min(player.health + 25, player.maxHealth); } },
+    { text: 'Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 8); } },
+    { text: 'Area +15%', apply: () => { player.area *= 1.15; } },
+    { text: 'Crit Chance +4%', apply: () => { player.critChance = Math.min(0.45, player.critChance + 0.04); } },
+    { text: 'Pickup-Range +20%', apply: () => { player.pickupRange *= 1.2; } }
+  ];
+
+  const chosen = [];
+  for (let i = 0; i < count; i++) {
+    const opt = possible[Math.floor(Math.random() * possible.length)];
+    opt.apply();
+    chosen.push(opt.text);
+  }
+
+  chestRewards.innerHTML = chosen.map(t => '• ' + t).join('<br>');
+  chestModal.classList.remove('hidden');
+}
+
+chestCloseBtn.onclick = () => {
+  chestModal.classList.add('hidden');
+  chestPending = false;
+};
+
 function update(dt) {
-  if (!gameRunning || levelUpPending || paused) return;
+  if (!gameRunning || levelUpPending || paused || chestPending) return;
 
   player.x += joystick.dx * player.speed;
   player.y += joystick.dy * player.speed;
@@ -374,7 +422,6 @@ function update(dt) {
   updateMagnet();
   updateParticles(dt);
 
-  // Projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.x += p.vx;
@@ -390,17 +437,20 @@ function update(dt) {
         p.hits = (p.hits || 0) + 1;
         if (p.hits > (p.piercing || 0)) projectiles.splice(i, 1);
         if (e.health <= 0) {
-          spawnParticles(e.x, e.y, e.color || '#ff4444', e.isBoss ? 20 : 10);
-          xpOrbs.push({ x: e.x, y: e.y, value: e.isBoss ? 40 + player.level * 5 : 8 + player.level * 2, radius: e.isBoss ? 10 : 6 });
+          spawnParticles(e.x, e.y, e.color || '#ff4444', e.isBoss ? 25 : 12);
+          if (e.isBoss) {
+            xpOrbs.push({ x: e.x, y: e.y, value: 0, radius: 14, isChest: true });
+          } else {
+            xpOrbs.push({ x: e.x, y: e.y, value: getXpValue(e.type), radius: 6 });
+          }
           enemies.splice(j, 1);
-          score += e.isBoss ? 100 : 10;
+          score += e.isBoss ? 150 : (e.type === 'tank' ? 20 : e.type === 'fast' ? 15 : 10);
         }
         if (p.hits > (p.piercing || 0)) break;
       }
     }
   }
 
-  // Enemies
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     const angle = Math.atan2(player.y - e.y, player.x - e.x);
@@ -414,7 +464,6 @@ function update(dt) {
     }
   }
 
-  // XP orbs
   const pullSpeed = weapons.magnet.enabled ? 8 + weapons.magnet.level * 1.5 : 5.5;
   for (let i = xpOrbs.length - 1; i >= 0; i--) {
     const o = xpOrbs[i];
@@ -424,10 +473,14 @@ function update(dt) {
       o.x += Math.cos(angle) * pullSpeed;
       o.y += Math.sin(angle) * pullSpeed;
     }
-    if (d < player.radius + o.radius) {
-      player.xp += o.value;
+    if (d < player.radius + o.radius + (o.isChest ? 8 : 0)) {
+      if (o.isChest) {
+        openChest();
+      } else {
+        player.xp += o.value;
+        checkLevelUp();
+      }
       xpOrbs.splice(i, 1);
-      checkLevelUp();
     }
   }
 
@@ -540,6 +593,10 @@ function updateUI() {
   const pct = Math.max(0, (player.health / player.maxHealth) * 100);
   healthFill.style.width = pct + '%';
   healthFill.style.background = pct > 50 ? '#4caf50' : pct > 25 ? '#ff9800' : '#f44336';
+
+  const xpPct = Math.min(100, (player.xp / player.xpToNext) * 100);
+  xpFill.style.width = xpPct + '%';
+  xpText.textContent = 'XP: ' + Math.floor(player.xp) + ' / ' + player.xpToNext;
 }
 
 function gameOver() {
@@ -595,11 +652,13 @@ function resetGame() {
   gameRunning = true;
   levelUpPending = false;
   paused = false;
+  chestPending = false;
   bossTimer = 0;
   bossCount = 0;
   gameOverEl.classList.add('hidden');
   levelUpModal.classList.add('hidden');
   pauseMenu.classList.add('hidden');
+  chestModal.classList.add('hidden');
   updateUI();
 }
 
@@ -630,11 +689,21 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  ctx.fillStyle = '#00ff00';
   for (const o of xpOrbs) {
-    ctx.beginPath();
-    ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
-    ctx.fill();
+    if (o.isChest) {
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#00ff00';
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, o.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   if (weapons.orbit.enabled) {
