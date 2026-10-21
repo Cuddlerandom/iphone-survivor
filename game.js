@@ -217,14 +217,14 @@ function killDeadEnemies() {
 
 function getEvolveHint(key) {
   if (!weapons[key] || !weapons[key].enabled || weapons[key].evolved) return '';
-  if (key === 'pistole') return ' (Evo: Schaden 30+ & 3 Schüsse)';
-  if (key === 'shotgun') return ' (Evo: Area 1.8+ & Level 4)';
-  if (key === 'katana') return ' (Evo: Area 1.7+ & Level 4)';
-  if (key === 'orbit') return ' (Evo: Area 1.9+ & Level 5)';
-  if (key === 'lightning') return ' (Evo: Crit 25%+ & Level 4)';
-  if (key === 'aura') return ' (Evo: Area 1.7+ & Level 4)';
-  if (key === 'boomerang') return ' (Evo: Area 1.6+ & Level 4)';
-  if (key === 'magnet') return ' (Evo: Pickup 180+)';
+  if (key === 'pistole') return ' (Evo: Schaden 22+ & 2 Schüsse)';
+  if (key === 'shotgun') return ' (Evo: Area 1.5+ & Level 3)';
+  if (key === 'katana') return ' (Evo: Area 1.4+ & Level 3)';
+  if (key === 'orbit') return ' (Evo: Area 1.6+ & Level 4)';
+  if (key === 'lightning') return ' (Evo: Crit 15%+ & Level 3)';
+  if (key === 'aura') return ' (Evo: Area 1.5+ & Level 3)';
+  if (key === 'boomerang') return ' (Evo: Area 1.4+ & Level 3)';
+  if (key === 'magnet') return ' (Evo: Pickup 140+)';
   return '';
 }
 
@@ -517,14 +517,14 @@ function openChest() {
   chestRewards.innerHTML = '';
 
   const possible = [
-    { text: 'Schaden +15%', apply: () => { player.damage *= 1.15; } },
-    { text: 'Angriffsgeschw. +10%', apply: () => { player.fireRate = Math.max(0.14, player.fireRate * 0.9); } },
-    { text: 'Bewegung +10%', apply: () => { player.speed *= 1.1; } },
-    { text: 'Max Leben +25', apply: () => { player.maxHealth += 25; player.health = Math.min(player.health + 25, player.maxHealth); } },
-    { text: 'Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 8); } },
-    { text: 'Area +15%', apply: () => { player.area *= 1.15; } },
-    { text: 'Crit Chance +4%', apply: () => { player.critChance = Math.min(0.45, player.critChance + 0.04); } },
-    { text: 'Pickup-Range +20%', apply: () => { player.pickupRange *= 1.2; } }
+    { text: '💪 Schaden +15%', apply: () => { player.damage *= 1.15; } },
+    { text: '⚡ Angriffsgeschw. +10%', apply: () => { player.fireRate = Math.max(0.14, player.fireRate * 0.9); } },
+    { text: '🏃 Bewegung +10%', apply: () => { player.speed *= 1.1; } },
+    { text: '❤️ Max Leben +25', apply: () => { player.maxHealth += 25; player.health = Math.min(player.health + 25, player.maxHealth); } },
+    { text: '🔫 Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 8); } },
+    { text: '💥 Area +15%', apply: () => { player.area *= 1.15; } },
+    { text: '✨ Crit Chance +4%', apply: () => { player.critChance = Math.min(0.45, player.critChance + 0.04); } },
+    { text: '🧲 Pickup-Range +20%', apply: () => { player.pickupRange *= 1.2; } }
   ];
 
   const chosen = [];
@@ -674,15 +674,15 @@ function checkLevelUp() {
 
 function canEvolve(weaponKey) {
   const w = weapons[weaponKey];
-  if (!w.enabled || w.evolved || w.level < 4) return false;
-  if (weaponKey === 'pistole' && player.damage >= 30 && player.projectileCount >= 3) return true;
-  if (weaponKey === 'shotgun' && player.area >= 1.8 && weapons.shotgun.level >= 4) return true;
-  if (weaponKey === 'katana' && player.area >= 1.7 && weapons.katana.level >= 4) return true;
-  if (weaponKey === 'orbit' && player.area >= 1.9 && weapons.orbit.level >= 5) return true;
-  if (weaponKey === 'lightning' && player.critChance >= 0.25 && weapons.lightning.level >= 4) return true;
-  if (weaponKey === 'aura' && player.area >= 1.7 && weapons.aura.level >= 4) return true;
-  if (weaponKey === 'boomerang' && player.area >= 1.6 && weapons.boomerang.level >= 4) return true;
-  if (weaponKey === 'magnet' && player.pickupRange >= 180) return true;
+  if (!w.enabled || w.evolved || w.level < 3) return false;
+  if (weaponKey === 'pistole' && player.damage >= 22 && player.projectileCount >= 2) return true;
+  if (weaponKey === 'shotgun' && player.area >= 1.5 && weapons.shotgun.level >= 3) return true;
+  if (weaponKey === 'katana' && player.area >= 1.4 && weapons.katana.level >= 3) return true;
+  if (weaponKey === 'orbit' && player.area >= 1.6 && weapons.orbit.level >= 4) return true;
+  if (weaponKey === 'lightning' && player.critChance >= 0.15 && weapons.lightning.level >= 3) return true;
+  if (weaponKey === 'aura' && player.area >= 1.5 && weapons.aura.level >= 3) return true;
+  if (weaponKey === 'boomerang' && player.area >= 1.4 && weapons.boomerang.level >= 3) return true;
+  if (weaponKey === 'magnet' && player.pickupRange >= 140) return true;
   return false;
 }
 
@@ -693,42 +693,42 @@ function showLevelUp() {
 
   const options = [];
 
-  if (canEvolve('pistole')) options.push({ text: '✨ Pistole → Magnum', apply: () => { weapons.pistole.evolved = true; } });
-  if (canEvolve('shotgun')) options.push({ text: '✨ Shotgun → Boomstick', apply: () => { weapons.shotgun.evolved = true; } });
-  if (canEvolve('katana')) options.push({ text: '✨ Katana → Excalibur', apply: () => { weapons.katana.evolved = true; } });
-  if (canEvolve('orbit')) options.push({ text: '✨ Orbit → Blades', apply: () => { weapons.orbit.evolved = true; } });
-  if (canEvolve('lightning')) options.push({ text: '✨ Lightning → Storm', apply: () => { weapons.lightning.evolved = true; } });
-  if (canEvolve('aura')) options.push({ text: '✨ Aura → Nova', apply: () => { weapons.aura.evolved = true; } });
-  if (canEvolve('boomerang')) options.push({ text: '✨ Boomerang → Cyclone', apply: () => { weapons.boomerang.evolved = true; } });
-  if (canEvolve('magnet')) options.push({ text: '✨ Magnet → Black Hole', apply: () => { weapons.magnet.evolved = true; } });
+  if (canEvolve('pistole')) options.push({ text: '✨🔫 Pistole → Magnum', apply: () => { weapons.pistole.evolved = true; } });
+  if (canEvolve('shotgun')) options.push({ text: '✨💥 Shotgun → Boomstick', apply: () => { weapons.shotgun.evolved = true; } });
+  if (canEvolve('katana')) options.push({ text: '✨⚔️ Katana → Excalibur', apply: () => { weapons.katana.evolved = true; } });
+  if (canEvolve('orbit')) options.push({ text: '✨🔁 Orbit → Blades', apply: () => { weapons.orbit.evolved = true; } });
+  if (canEvolve('lightning')) options.push({ text: '✨⚡ Lightning → Storm', apply: () => { weapons.lightning.evolved = true; } });
+  if (canEvolve('aura')) options.push({ text: '✨💠 Aura → Nova', apply: () => { weapons.aura.evolved = true; } });
+  if (canEvolve('boomerang')) options.push({ text: '✨🔄 Boomerang → Cyclone', apply: () => { weapons.boomerang.evolved = true; } });
+  if (canEvolve('magnet')) options.push({ text: '✨🧲 Magnet → Black Hole', apply: () => { weapons.magnet.evolved = true; } });
 
-  options.push({ text: 'Schaden +20%', apply: () => { player.damage *= 1.2; } });
-  options.push({ text: 'Angriffsgeschw. +12%', apply: () => { player.fireRate = Math.max(0.15, player.fireRate * 0.88); } });
-  options.push({ text: 'Bewegung +12%', apply: () => { player.speed *= 1.12; } });
-  options.push({ text: 'Max Leben +30', apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); } });
-  options.push({ text: 'Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 7); } });
-  options.push({ text: 'Pickup-Range +25%', apply: () => { player.pickupRange *= 1.25; } });
-  options.push({ text: 'Area +18%', apply: () => { player.area *= 1.18; } });
-  options.push({ text: 'Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
+  options.push({ text: '💪 Schaden +20%', apply: () => { player.damage *= 1.2; } });
+  options.push({ text: '⚡ Angriffsgeschw. +12%', apply: () => { player.fireRate = Math.max(0.15, player.fireRate * 0.88); } });
+  options.push({ text: '🏃 Bewegung +12%', apply: () => { player.speed *= 1.12; } });
+  options.push({ text: '❤️ Max Leben +30', apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); } });
+  options.push({ text: '🔫 Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 7); } });
+  options.push({ text: '🧲 Pickup-Range +25%', apply: () => { player.pickupRange *= 1.25; } });
+  options.push({ text: '💥 Area +18%', apply: () => { player.area *= 1.18; } });
+  options.push({ text: '✨ Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
 
-  if (!weapons.orbit.enabled) options.push({ text: 'Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
-  else if (weapons.orbit.level < 8) options.push({ text: 'Orbit Level +1' + getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
+  if (!weapons.orbit.enabled) options.push({ text: '🔁 Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
+  else if (weapons.orbit.level < 8) options.push({ text: '🔁 Orbit Level +1' + getEvolveHint('orbit'), apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
 
-  if (!weapons.lightning.enabled) options.push({ text: 'Lightning freischalten', apply: () => { weapons.lightning.enabled = true; weapons.lightning.level = 1; } });
-  else if (weapons.lightning.level < 6) options.push({ text: 'Lightning Level +1' + getEvolveHint('lightning'), apply: () => { weapons.lightning.level++; } });
+  if (!weapons.lightning.enabled) options.push({ text: '⚡ Lightning freischalten', apply: () => { weapons.lightning.enabled = true; weapons.lightning.level = 1; } });
+  else if (weapons.lightning.level < 6) options.push({ text: '⚡ Lightning Level +1' + getEvolveHint('lightning'), apply: () => { weapons.lightning.level++; } });
 
-  if (!weapons.aura.enabled) options.push({ text: 'Aura freischalten', apply: () => { weapons.aura.enabled = true; weapons.aura.level = 1; } });
-  else if (weapons.aura.level < 6) options.push({ text: 'Aura Level +1' + getEvolveHint('aura'), apply: () => { weapons.aura.level++; } });
+  if (!weapons.aura.enabled) options.push({ text: '💠 Aura freischalten', apply: () => { weapons.aura.enabled = true; weapons.aura.level = 1; } });
+  else if (weapons.aura.level < 6) options.push({ text: '💠 Aura Level +1' + getEvolveHint('aura'), apply: () => { weapons.aura.level++; } });
 
-  if (!weapons.boomerang.enabled) options.push({ text: 'Boomerang freischalten', apply: () => { weapons.boomerang.enabled = true; weapons.boomerang.level = 1; } });
-  else if (weapons.boomerang.level < 6) options.push({ text: 'Boomerang Level +1' + getEvolveHint('boomerang'), apply: () => { weapons.boomerang.level++; } });
+  if (!weapons.boomerang.enabled) options.push({ text: '🔄 Boomerang freischalten', apply: () => { weapons.boomerang.enabled = true; weapons.boomerang.level = 1; } });
+  else if (weapons.boomerang.level < 6) options.push({ text: '🔄 Boomerang Level +1' + getEvolveHint('boomerang'), apply: () => { weapons.boomerang.level++; } });
 
-  if (!weapons.magnet.enabled) options.push({ text: 'Magnet freischalten', apply: () => { weapons.magnet.enabled = true; weapons.magnet.level = 1; } });
-  else if (weapons.magnet.level < 5) options.push({ text: 'Magnet Level +1' + getEvolveHint('magnet'), apply: () => { weapons.magnet.level++; } });
+  if (!weapons.magnet.enabled) options.push({ text: '🧲 Magnet freischalten', apply: () => { weapons.magnet.enabled = true; weapons.magnet.level = 1; } });
+  else if (weapons.magnet.level < 5) options.push({ text: '🧲 Magnet Level +1' + getEvolveHint('magnet'), apply: () => { weapons.magnet.level++; } });
 
-  if (weapons.pistole.enabled && weapons.pistole.level < 8) options.push({ text: 'Pistole Level +1' + getEvolveHint('pistole'), apply: () => { weapons.pistole.level++; } });
-  if (weapons.shotgun.enabled && weapons.shotgun.level < 6) options.push({ text: 'Shotgun Level +1' + getEvolveHint('shotgun'), apply: () => { weapons.shotgun.level++; } });
-  if (weapons.katana.enabled && weapons.katana.level < 6) options.push({ text: 'Katana Level +1' + getEvolveHint('katana'), apply: () => { weapons.katana.level++; } });
+  if (weapons.pistole.enabled && weapons.pistole.level < 8) options.push({ text: '🔫 Pistole Level +1' + getEvolveHint('pistole'), apply: () => { weapons.pistole.level++; } });
+  if (weapons.shotgun.enabled && weapons.shotgun.level < 6) options.push({ text: '💥 Shotgun Level +1' + getEvolveHint('shotgun'), apply: () => { weapons.shotgun.level++; } });
+  if (weapons.katana.enabled && weapons.katana.level < 6) options.push({ text: '⚔️ Katana Level +1' + getEvolveHint('katana'), apply: () => { weapons.katana.level++; } });
 
   options.sort(() => Math.random() - 0.5);
   const evo = options.filter(o => o.text.includes('✨'));
