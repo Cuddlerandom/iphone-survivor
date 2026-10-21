@@ -68,7 +68,7 @@ let player = {
 let weapons = {
   pistole: { level: 1, enabled: true, evolved: false },
   shotgun: { level: 0, enabled: false, evolved: false },
-  katana: { level: 0, enabled: false, angle: 0, evolved: false },
+  katana: { level: 0, enabled: false, angle: 0, timer: 0, slashTimer: 0, evolved: false },
   orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false },
   spread: { level: 0, enabled: false, evolved: false },
   lightning: { level: 0, enabled: false, timer: 0, evolved: false },
@@ -370,15 +370,42 @@ function shootShotgun() {
 
 function updateKatana(dt) {
   if (!weapons.katana.enabled) return;
-  weapons.katana.angle += dt * 8;
-  const range = 55 * player.area * (weapons.katana.evolved ? 1.5 : 1);
-  const dmg = player.damage * 0.55 * weapons.katana.level * (weapons.katana.evolved ? 1.9 : 1) * dt * 4;
+
+  weapons.katana.timer += dt;
+  const cooldown = weapons.katana.evolved ? 0.45 : 0.7;
+  if (weapons.katana.timer < cooldown) {
+    weapons.katana.slashTimer = Math.max(0, weapons.katana.slashTimer - dt);
+    return;
+  }
+
+  // Look for an enemy in front
+  const faceAngle = Math.atan2(joystick.dy, joystick.dx);
+  const hasMovement = Math.hypot(joystick.dx, joystick.dy) > 0.1;
+  const lookAngle = hasMovement ? faceAngle : (nearestEnemy() ? Math.atan2(nearestEnemy().y - player.y, nearestEnemy().x - player.x) : 0);
+
+  const range = 70 * player.area * (weapons.katana.evolved ? 1.4 : 1);
+  const arc = 0.9 + weapons.katana.level * 0.12; // grows with level
+
+  let hit = false;
+  const dmg = player.damage * 0.85 * weapons.katana.level * (weapons.katana.evolved ? 1.7 : 1);
+
   for (const e of enemies) {
     const d = Math.hypot(e.x - player.x, e.y - player.y);
-    if (d < range) {
+    if (d > range) continue;
+    const angleToEnemy = Math.atan2(e.y - player.y, e.x - player.x);
+    let diff = Math.abs(angleToEnemy - lookAngle);
+    if (diff > Math.PI) diff = Math.PI * 2 - diff;
+    if (diff < arc / 2) {
       e.health -= dmg;
-      if (Math.random() < 0.25) spawnDamageNumber(e.x, e.y, dmg);
+      spawnDamageNumber(e.x, e.y, dmg);
+      hit = true;
     }
+  }
+
+  if (hit) {
+    weapons.katana.timer = 0;
+    weapons.katana.angle = lookAngle;
+    weapons.katana.slashTimer = 0.18;
   }
 }
 
@@ -852,12 +879,14 @@ function draw() {
     }
   }
 
-  if (weapons.katana.enabled) {
-    const range = 55 * player.area * (weapons.katana.evolved ? 1.5 : 1);
-    ctx.strokeStyle = weapons.katana.evolved ? 'rgba(255,80,80,0.7)' : 'rgba(200,200,255,0.6)';
-    ctx.lineWidth = 4;
+  // Katana slash visual
+  if (weapons.katana.enabled && weapons.katana.slashTimer > 0) {
+    const range = 70 * player.area * (weapons.katana.evolved ? 1.4 : 1);
+    const arc = 0.9 + weapons.katana.level * 0.12;
+    ctx.strokeStyle = weapons.katana.evolved ? 'rgba(255,80,80,0.85)' : 'rgba(220,220,255,0.8)';
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, range, weapons.katana.angle - 0.8, weapons.katana.angle + 0.8);
+    ctx.arc(player.x, player.y, range, weapons.katana.angle - arc/2, weapons.katana.angle + arc/2);
     ctx.stroke();
   }
 
