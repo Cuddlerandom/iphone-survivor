@@ -55,15 +55,18 @@ let player = {
 };
 
 let weapons = {
-  projectile: { level: 1, enabled: true, evolved: false },
-  orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false },
+  projectile: { level: 1, enabled: true, evolved: false, role: 'Single-Target' },
+  orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false, role: 'Defensive' },
   spread: { level: 0, enabled: false, evolved: false },
-  lightning: { level: 0, enabled: false, timer: 0, evolved: false },
-  aura: { level: 0, enabled: false, timer: 0, evolved: false }
+  lightning: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Multi-Target' },
+  aura: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Close-Range' },
+  boomerang: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Area Control' },
+  magnet: { level: 0, enabled: false, evolved: false, role: 'Utility' }
 };
 
 let enemies = [];
 let projectiles = [];
+let boomerangs = [];
 let xpOrbs = [];
 let particles = [];
 let score = 0;
@@ -223,7 +226,7 @@ function shootProjectiles() {
   const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
   const count = player.projectileCount;
   const spread = weapons.spread.enabled ? 0.45 : 0.12;
-  const dmgMult = weapons.projectile.evolved ? 2.2 : (1 + (weapons.projectile.level - 1) * 0.18);
+  const dmgMult = weapons.projectile.evolved ? 2.5 : (1 + (weapons.projectile.level - 1) * 0.22);
   for (let i = 0; i < count; i++) {
     const offset = (i - (count - 1) / 2) * spread;
     const angle = baseAngle + offset;
@@ -233,8 +236,8 @@ function shootProjectiles() {
       vx: Math.cos(angle) * player.projectileSpeed,
       vy: Math.sin(angle) * player.projectileSpeed,
       damage: player.damage * dmgMult,
-      radius: weapons.projectile.evolved ? 7 : 4 + Math.min(weapons.projectile.level, 4),
-      piercing: weapons.projectile.evolved ? 3 : 0,
+      radius: weapons.projectile.evolved ? 8 : 4 + Math.min(weapons.projectile.level, 4),
+      piercing: weapons.projectile.evolved ? 5 : 0,
       hits: 0
     });
   }
@@ -242,13 +245,13 @@ function shootProjectiles() {
 
 function updateOrbit(dt) {
   if (!weapons.orbit.enabled) return;
-  weapons.orbit.angle += dt * (weapons.orbit.evolved ? 3.5 : 2.2);
+  weapons.orbit.angle += dt * (weapons.orbit.evolved ? 4 : 2.4);
   weapons.orbit.damageTimer += dt;
-  const orbitRadius = weapons.orbit.radius * player.area * (weapons.orbit.evolved ? 1.4 : 1);
-  const interval = weapons.orbit.evolved ? 0.15 : 0.28;
+  const orbitRadius = weapons.orbit.radius * player.area * (weapons.orbit.evolved ? 1.5 : 1);
+  const interval = weapons.orbit.evolved ? 0.12 : 0.25;
   if (weapons.orbit.damageTimer > interval) {
     weapons.orbit.damageTimer = 0;
-    const dmg = player.damage * 0.35 * weapons.orbit.level * (weapons.orbit.evolved ? 1.8 : 1);
+    const dmg = player.damage * 0.4 * weapons.orbit.level * (weapons.orbit.evolved ? 2 : 1);
     for (const e of enemies) {
       const d = Math.hypot(e.x - player.x, e.y - player.y);
       if (d < orbitRadius + e.radius) e.health -= dmg;
@@ -259,14 +262,16 @@ function updateOrbit(dt) {
 function updateLightning(dt) {
   if (!weapons.lightning.enabled) return;
   weapons.lightning.timer += dt;
-  const interval = weapons.lightning.evolved ? 0.8 : 1.4;
+  const interval = weapons.lightning.evolved ? 0.7 : 1.3;
   if (weapons.lightning.timer > interval) {
     weapons.lightning.timer = 0;
+    const maxTargets = weapons.lightning.evolved ? 6 : 3 + weapons.lightning.level;
     const targets = enemies.slice().sort((a, b) => 
       Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y)
-    ).slice(0, weapons.lightning.evolved ? 5 : 2 + weapons.lightning.level);
+    ).slice(0, maxTargets);
+    const dmg = player.damage * (weapons.lightning.evolved ? 1.8 : 1.0) * weapons.lightning.level;
     for (const e of targets) {
-      e.health -= player.damage * (weapons.lightning.evolved ? 1.6 : 0.9) * weapons.lightning.level;
+      e.health -= dmg;
     }
   }
 }
@@ -274,14 +279,68 @@ function updateLightning(dt) {
 function updateAura(dt) {
   if (!weapons.aura.enabled) return;
   weapons.aura.timer += dt;
-  if (weapons.aura.timer > 0.4) {
+  if (weapons.aura.timer > 0.35) {
     weapons.aura.timer = 0;
-    const rad = 55 * player.area * (weapons.aura.evolved ? 1.6 : 1);
-    const dmg = player.damage * 0.25 * weapons.aura.level * (weapons.aura.evolved ? 2 : 1);
+    const rad = 60 * player.area * (weapons.aura.evolved ? 1.7 : 1);
+    const dmg = player.damage * 0.3 * weapons.aura.level * (weapons.aura.evolved ? 2.2 : 1);
     for (const e of enemies) {
       if (Math.hypot(e.x - player.x, e.y - player.y) < rad) e.health -= dmg;
     }
   }
+}
+
+function updateBoomerang(dt) {
+  if (!weapons.boomerang.enabled) return;
+  weapons.boomerang.timer += dt;
+  const interval = weapons.boomerang.evolved ? 1.2 : 1.8;
+  if (weapons.boomerang.timer > interval) {
+    weapons.boomerang.timer = 0;
+    const count = 1 + Math.floor(weapons.boomerang.level / 2);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count;
+      boomerangs.push({
+        x: player.x,
+        y: player.y,
+        angle,
+        dist: 0,
+        maxDist: 120 + weapons.boomerang.level * 20,
+        returning: false,
+        damage: player.damage * (weapons.boomerang.evolved ? 1.6 : 0.9) * weapons.boomerang.level,
+        radius: 8
+      });
+    }
+  }
+  for (let i = boomerangs.length - 1; i >= 0; i--) {
+    const b = boomerangs[i];
+    const speed = weapons.boomerang.evolved ? 180 : 140;
+    if (!b.returning) {
+      b.dist += speed * dt;
+      if (b.dist >= b.maxDist) b.returning = true;
+    } else {
+      b.dist -= speed * dt;
+      if (b.dist <= 0) {
+        boomerangs.splice(i, 1);
+        continue;
+      }
+    }
+    b.x = player.x + Math.cos(b.angle) * b.dist;
+    b.y = player.y + Math.sin(b.angle) * b.dist;
+    for (const e of enemies) {
+      if (Math.hypot(b.x - e.x, b.y - e.y) < b.radius + e.radius) {
+        e.health -= b.damage * dt * 4;
+      }
+    }
+  }
+}
+
+function updateMagnet() {
+  if (!weapons.magnet.enabled) {
+    player.pickupRange = 90;
+    return;
+  }
+  const base = 90;
+  const bonus = weapons.magnet.level * 35 * (weapons.magnet.evolved ? 1.5 : 1);
+  player.pickupRange = base + bonus;
 }
 
 function updateParticles(dt) {
@@ -311,6 +370,8 @@ function update(dt) {
   updateOrbit(dt);
   updateLightning(dt);
   updateAura(dt);
+  updateBoomerang(dt);
+  updateMagnet();
   updateParticles(dt);
 
   // Projectiles
@@ -354,13 +415,14 @@ function update(dt) {
   }
 
   // XP orbs
+  const pullSpeed = weapons.magnet.enabled ? 8 + weapons.magnet.level * 1.5 : 5.5;
   for (let i = xpOrbs.length - 1; i >= 0; i--) {
     const o = xpOrbs[i];
     const d = Math.hypot(o.x - player.x, o.y - player.y);
     if (d < player.pickupRange) {
       const angle = Math.atan2(player.y - o.y, player.x - o.x);
-      o.x += Math.cos(angle) * 5.5;
-      o.y += Math.sin(angle) * 5.5;
+      o.x += Math.cos(angle) * pullSpeed;
+      o.y += Math.sin(angle) * pullSpeed;
     }
     if (d < player.radius + o.radius) {
       player.xp += o.value;
@@ -369,7 +431,6 @@ function update(dt) {
     }
   }
 
-  // Spawn logic
   spawnTimer += dt;
   const spawnInterval = Math.max(0.28, 1.6 - player.level * 0.06);
   if (spawnTimer > spawnInterval) {
@@ -381,7 +442,6 @@ function update(dt) {
     spawnTimer = 0;
   }
 
-  // Boss every ~75 seconds
   bossTimer += dt;
   if (bossTimer > 75) {
     spawnEnemy('boss');
@@ -405,10 +465,12 @@ function checkLevelUp() {
 function canEvolve(weaponKey) {
   const w = weapons[weaponKey];
   if (!w.enabled || w.evolved || w.level < 5) return false;
-  if (weaponKey === 'projectile' && player.damage >= 25) return true;
-  if (weaponKey === 'orbit' && player.area >= 1.8) return true;
-  if (weaponKey === 'lightning' && player.critChance >= 0.2) return true;
-  if (weaponKey === 'aura' && player.area >= 1.6) return true;
+  if (weaponKey === 'projectile' && player.damage >= 30 && player.projectileCount >= 3) return true;
+  if (weaponKey === 'orbit' && player.area >= 1.9 && weapons.orbit.level >= 5) return true;
+  if (weaponKey === 'lightning' && player.critChance >= 0.25 && weapons.lightning.level >= 4) return true;
+  if (weaponKey === 'aura' && player.area >= 1.7 && weapons.aura.level >= 4) return true;
+  if (weaponKey === 'boomerang' && player.area >= 1.6 && weapons.boomerang.level >= 4) return true;
+  if (weaponKey === 'magnet' && player.pickupRange >= 180) return true;
   return false;
 }
 
@@ -419,13 +481,15 @@ function showLevelUp() {
 
   const options = [];
 
-  if (canEvolve('projectile')) options.push({ text: '✨ Projektil → Laser (Evolution)', apply: () => { weapons.projectile.evolved = true; } });
-  if (canEvolve('orbit')) options.push({ text: '✨ Orbit → Blades (Evolution)', apply: () => { weapons.orbit.evolved = true; } });
-  if (canEvolve('lightning')) options.push({ text: '✨ Lightning → Storm (Evolution)', apply: () => { weapons.lightning.evolved = true; } });
-  if (canEvolve('aura')) options.push({ text: '✨ Aura → Nova (Evolution)', apply: () => { weapons.aura.evolved = true; } });
+  if (canEvolve('projectile')) options.push({ text: '✨ Projektil → Laser (Single-Target)', apply: () => { weapons.projectile.evolved = true; } });
+  if (canEvolve('orbit')) options.push({ text: '✨ Orbit → Blades (Defensive)', apply: () => { weapons.orbit.evolved = true; } });
+  if (canEvolve('lightning')) options.push({ text: '✨ Lightning → Storm (Multi-Target)', apply: () => { weapons.lightning.evolved = true; } });
+  if (canEvolve('aura')) options.push({ text: '✨ Aura → Nova (Close-Range)', apply: () => { weapons.aura.evolved = true; } });
+  if (canEvolve('boomerang')) options.push({ text: '✨ Boomerang → Cyclone', apply: () => { weapons.boomerang.evolved = true; } });
+  if (canEvolve('magnet')) options.push({ text: '✨ Magnet → Black Hole', apply: () => { weapons.magnet.evolved = true; } });
 
   options.push({ text: 'Schaden +20%', apply: () => { player.damage *= 1.2; } });
-  options.push({ text: 'Angriffsgeschw. +12%', apply: () => { player.fireRate = Math.max(0.16, player.fireRate * 0.88); } });
+  options.push({ text: 'Angriffsgeschw. +12%', apply: () => { player.fireRate = Math.max(0.15, player.fireRate * 0.88); } });
   options.push({ text: 'Bewegung +12%', apply: () => { player.speed *= 1.12; } });
   options.push({ text: 'Max Leben +30', apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); } });
   options.push({ text: 'Projektil-Anzahl +1', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 7); } });
@@ -433,14 +497,20 @@ function showLevelUp() {
   options.push({ text: 'Area +18%', apply: () => { player.area *= 1.18; } });
   options.push({ text: 'Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); } });
 
-  if (!weapons.orbit.enabled) options.push({ text: 'Orbit freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
+  if (!weapons.orbit.enabled) options.push({ text: 'Orbit (Defensive) freischalten', apply: () => { weapons.orbit.enabled = true; weapons.orbit.level = 1; } });
   else if (weapons.orbit.level < 8) options.push({ text: 'Orbit Level +1', apply: () => { weapons.orbit.level++; weapons.orbit.radius += 6; } });
 
-  if (!weapons.lightning.enabled) options.push({ text: 'Lightning freischalten', apply: () => { weapons.lightning.enabled = true; weapons.lightning.level = 1; } });
+  if (!weapons.lightning.enabled) options.push({ text: 'Lightning (Multi-Target) freischalten', apply: () => { weapons.lightning.enabled = true; weapons.lightning.level = 1; } });
   else if (weapons.lightning.level < 6) options.push({ text: 'Lightning Level +1', apply: () => { weapons.lightning.level++; } });
 
-  if (!weapons.aura.enabled) options.push({ text: 'Aura freischalten', apply: () => { weapons.aura.enabled = true; weapons.aura.level = 1; } });
+  if (!weapons.aura.enabled) options.push({ text: 'Aura (Close-Range) freischalten', apply: () => { weapons.aura.enabled = true; weapons.aura.level = 1; } });
   else if (weapons.aura.level < 6) options.push({ text: 'Aura Level +1', apply: () => { weapons.aura.level++; } });
+
+  if (!weapons.boomerang.enabled) options.push({ text: 'Boomerang (Area) freischalten', apply: () => { weapons.boomerang.enabled = true; weapons.boomerang.level = 1; } });
+  else if (weapons.boomerang.level < 6) options.push({ text: 'Boomerang Level +1', apply: () => { weapons.boomerang.level++; } });
+
+  if (!weapons.magnet.enabled) options.push({ text: 'Magnet (Utility) freischalten', apply: () => { weapons.magnet.enabled = true; weapons.magnet.level = 1; } });
+  else if (weapons.magnet.level < 5) options.push({ text: 'Magnet Level +1', apply: () => { weapons.magnet.level++; } });
 
   if (!weapons.spread.enabled) options.push({ text: 'Spread-Shot freischalten', apply: () => { weapons.spread.enabled = true; } });
 
@@ -507,14 +577,17 @@ function resetGame() {
     critChance: 0.05
   };
   weapons = {
-    projectile: { level: 1, enabled: true, evolved: false },
-    orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false },
+    projectile: { level: 1, enabled: true, evolved: false, role: 'Single-Target' },
+    orbit: { level: 0, enabled: false, angle: 0, radius: 45, damageTimer: 0, evolved: false, role: 'Defensive' },
     spread: { level: 0, enabled: false, evolved: false },
-    lightning: { level: 0, enabled: false, timer: 0, evolved: false },
-    aura: { level: 0, enabled: false, timer: 0, evolved: false }
+    lightning: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Multi-Target' },
+    aura: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Close-Range' },
+    boomerang: { level: 0, enabled: false, timer: 0, evolved: false, role: 'Area Control' },
+    magnet: { level: 0, enabled: false, evolved: false, role: 'Utility' }
   };
   enemies = [];
   projectiles = [];
+  boomerangs = [];
   xpOrbs = [];
   particles = [];
   score = 0;
@@ -547,7 +620,6 @@ resumeBtn.onclick = () => {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Particles
   for (const p of particles) {
     const alpha = p.life / p.maxLife;
     ctx.fillStyle = p.color;
@@ -558,7 +630,6 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // XP orbs
   ctx.fillStyle = '#00ff00';
   for (const o of xpOrbs) {
     ctx.beginPath();
@@ -567,31 +638,37 @@ function draw() {
   }
 
   if (weapons.orbit.enabled) {
-    const r = weapons.orbit.radius * player.area * (weapons.orbit.evolved ? 1.4 : 1);
+    const r = weapons.orbit.radius * player.area * (weapons.orbit.evolved ? 1.5 : 1);
     ctx.strokeStyle = weapons.orbit.evolved ? 'rgba(255,180,50,0.8)' : 'rgba(100,200,255,0.6)';
     ctx.lineWidth = weapons.orbit.evolved ? 4 : 3;
     ctx.beginPath();
     ctx.arc(player.x, player.y, r, 0, Math.PI * 2);
     ctx.stroke();
-    const dots = weapons.orbit.evolved ? 6 : 4;
+    const dots = weapons.orbit.evolved ? 7 : 4;
     for (let i = 0; i < dots; i++) {
       const a = weapons.orbit.angle + (i * Math.PI * 2 / dots);
       ctx.fillStyle = weapons.orbit.evolved ? '#ffaa33' : '#88ccff';
       ctx.beginPath();
-      ctx.arc(player.x + Math.cos(a) * r, player.y + Math.sin(a) * r, weapons.orbit.evolved ? 8 : 6, 0, Math.PI * 2);
+      ctx.arc(player.x + Math.cos(a) * r, player.y + Math.sin(a) * r, weapons.orbit.evolved ? 9 : 6, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
   if (weapons.aura.enabled) {
-    const rad = 55 * player.area * (weapons.aura.evolved ? 1.6 : 1);
-    ctx.fillStyle = weapons.aura.evolved ? 'rgba(255,80,80,0.15)' : 'rgba(80,255,120,0.12)';
+    const rad = 60 * player.area * (weapons.aura.evolved ? 1.7 : 1);
+    ctx.fillStyle = weapons.aura.evolved ? 'rgba(255,80,80,0.18)' : 'rgba(80,255,120,0.14)';
     ctx.beginPath();
     ctx.arc(player.x, player.y, rad, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Enemies
+  ctx.fillStyle = weapons.boomerang.evolved ? '#ff66aa' : '#ffaa66';
+  for (const b of boomerangs) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   for (const e of enemies) {
     ctx.fillStyle = e.color || '#ff4444';
     ctx.beginPath();
@@ -621,7 +698,6 @@ function draw() {
   ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Joystick
   ctx.strokeStyle = 'rgba(255,255,255,0.5)';
   ctx.lineWidth = 3;
   ctx.beginPath();
