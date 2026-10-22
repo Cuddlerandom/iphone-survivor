@@ -384,7 +384,7 @@ function shootMP() {
   if (!target) return;
   const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
   const count = weapons.mp.evolved ? 3 : 1 + Math.floor(weapons.mp.level / 2);
-  const dmg = player.damage * 0.28 * (weapons.mp.evolved ? 1.5 : 1) * weapons.mp.level;
+  const dmg = player.damage * 0.18 * (weapons.mp.evolved ? 1.4 : 1) * weapons.mp.level;
   for (let i = 0; i < count; i++) {
     const offset = (i - (count - 1) / 2) * 0.18;
     const angle = baseAngle + offset;
@@ -487,14 +487,14 @@ function updateOrbit(dt) {
 function updateLightning(dt) {
   if (!weapons.lightning.enabled) return;
   weapons.lightning.timer += dt;
-  const interval = (weapons.lightning.evolved ? 0.7 : 1.3) / player.cooldownRed;
+  const interval = (weapons.lightning.evolved ? 0.8 : 1.5) / player.cooldownRed;
   if (weapons.lightning.timer > interval) {
     weapons.lightning.timer = 0;
-    const maxTargets = (weapons.lightning.evolved ? 6 : 3 + weapons.lightning.level) + player.pierce;
+    const maxTargets = (weapons.lightning.evolved ? 5 : weapons.lightning.level) + Math.floor(player.pierce / 2);
     const targets = enemies.slice().sort((a, b) => 
       Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y)
     ).slice(0, maxTargets);
-    const dmg = player.damage * (weapons.lightning.evolved ? 1.8 : 1.0) * weapons.lightning.level;
+    const dmg = player.damage * (weapons.lightning.evolved ? 1.4 : 0.75) * weapons.lightning.level;
     for (const e of targets) {
       e.health -= dmg;
       spawnDamageNumber(e.x, e.y, dmg);
@@ -812,7 +812,7 @@ function update(dt) {
 
   if (weapons.mp.enabled) {
     weapons.mp.timer += dt;
-    const mpRate = (weapons.mp.evolved ? 0.22 : 0.32) / player.cooldownRed;
+    const mpRate = (weapons.mp.evolved ? 0.26 : 0.38) / player.cooldownRed;
     if (weapons.mp.timer >= mpRate) {
       shootMP();
       weapons.mp.timer = 0;
