@@ -713,15 +713,20 @@ function updateWhip(dt) {
 
 function updateShield(dt) {
   if (!weapons.shield.enabled) return;
-  const rad = 55 * (weapons.shield.evolved ? 1.4 : 1);
+  const rad = 45 * (weapons.shield.evolved ? 1.3 : 1);
+  const pushStrength = 1.2 * (weapons.shield.evolved ? 1.4 : 1);
   for (const e of enemies) {
-    if (Math.hypot(e.x - player.x, e.y - player.y) < rad + e.radius) {
+    const dist = Math.hypot(e.x - player.x, e.y - player.y);
+    if (dist < rad + e.radius && dist > 0) {
       const angle = Math.atan2(e.y - player.y, e.x - player.x);
-      e.x += Math.cos(angle) * 4;
-      e.y += Math.sin(angle) * 4;
-      if (weapons.shield.evolved && Math.random() < 0.1) {
-        e.health -= player.damage * 0.3;
-        spawnDamageNumber(e.x, e.y, player.damage * 0.3);
+      // Soft push - enemies can still slowly approach
+      const push = pushStrength * dt * 60;
+      e.x += Math.cos(angle) * push;
+      e.y += Math.sin(angle) * push;
+      if (weapons.shield.evolved && Math.random() < 0.04) {
+        const thornDmg = player.damage * 0.25 * weapons.shield.level;
+        e.health -= thornDmg;
+        spawnDamageNumber(e.x, e.y, thornDmg);
       }
     }
   }
@@ -1220,7 +1225,7 @@ function draw() {
     ctx.strokeStyle = weapons.shield.evolved ? 'rgba(255,100,100,0.6)' : 'rgba(100,200,255,0.5)';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, 55 * (weapons.shield.evolved ? 1.4 : 1), 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, 45 * (weapons.shield.evolved ? 1.3 : 1), 0, Math.PI * 2);
     ctx.stroke();
   }
 
