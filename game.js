@@ -1019,24 +1019,24 @@ function showLevelUp() {
   if (canEvolve('shield')) options.push({ text: '✨🛡 Shield → Thorns', level: weapons.shield.level, apply: () => { weapons.shield.evolved = true; } });
 
   if (canAddStat) {
-    options.push({ text: '💪 Schaden +20%', isStat: true, apply: () => { player.damage *= 1.2; statUpgrades++; } });
-    options.push({ text: '⚡ Angriffsgeschw. +12%', isStat: true, apply: () => { player.fireRate = Math.max(0.15, player.fireRate * 0.88); statUpgrades++; } });
-    options.push({ text: '🏃 Bewegung +12%', isStat: true, apply: () => { player.speed *= 1.12; statUpgrades++; } });
-    options.push({ text: '❤️ Max Leben +30', isStat: true, apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); statUpgrades++; } });
-    options.push({ text: '🔫 Projektil-Anzahl +1', isStat: true, apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 7); statUpgrades++; } });
-    options.push({ text: '🧲 Pickup-Range +25%', isStat: true, apply: () => { player.pickupRange *= 1.25; statUpgrades++; } });
-    options.push({ text: '💥 Area +14%', isStat: true, apply: () => { player.area *= 1.14; statUpgrades++; } });
-    options.push({ text: '✨ Crit Chance +5%', isStat: true, apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); statUpgrades++; } });
-    options.push({ text: '🚀 Proj. Speed +18%', isStat: true, apply: () => { player.projectileSpeed *= 1.18; statUpgrades++; } });
-    options.push({ text: '⏱ Duration +18%', isStat: true, apply: () => { player.duration *= 1.18; statUpgrades++; } });
-    options.push({ text: '⏭ Cooldown Red. +15%', isStat: true, apply: () => { player.cooldownRed *= 1.15; statUpgrades++; } });
-    options.push({ text: '💨 Knockback +25%', isStat: true, apply: () => { player.knockback *= 1.25; statUpgrades++; } });
-    options.push({ text: '🔫 Pierce +1', isStat: true, apply: () => { player.pierce = Math.min(player.pierce + 1, 6); statUpgrades++; } });
+    options.push({ text: '💪 Schaden +20%', hint: weapons.shotgun.enabled ? 'Evo: Shotgun' : '', apply: () => { player.damage *= 1.2; statUpgrades++; } });
+    options.push({ text: '⚡ Angriffsgeschw. +12%', hint: weapons.laser.enabled ? 'Evo: Laser' : '', apply: () => { player.fireRate = Math.max(0.15, player.fireRate * 0.88); statUpgrades++; } });
+    options.push({ text: '🏃 Bewegung +12%', apply: () => { player.speed *= 1.12; statUpgrades++; } });
+    options.push({ text: '❤️ Max Leben +30', apply: () => { player.maxHealth += 30; player.health = Math.min(player.health + 30, player.maxHealth); statUpgrades++; } });
+    options.push({ text: '🔫 Projektil-Anzahl +1', hint: weapons.mine.enabled ? 'Evo: Mine' : '', apply: () => { player.projectileCount = Math.min(player.projectileCount + 1, 7); statUpgrades++; } });
+    options.push({ text: '🧲 Pickup-Range +25%', hint: weapons.magnet.enabled ? 'Evo: Magnet' : '', apply: () => { player.pickupRange *= 1.25; statUpgrades++; } });
+    options.push({ text: '💥 Area +14%', hint: weapons.rocket.enabled ? 'Evo: Rocket' : '', apply: () => { player.area *= 1.14; statUpgrades++; } });
+    options.push({ text: '✨ Crit Chance +5%', apply: () => { player.critChance = Math.min(0.4, player.critChance + 0.05); statUpgrades++; } });
+    options.push({ text: '🚀 Proj. Speed +18%', hint: weapons.orbit.enabled ? 'Evo: Orbit' : '', apply: () => { player.projectileSpeed *= 1.18; statUpgrades++; } });
+    options.push({ text: '⏱ Duration +18%', hint: (weapons.aura.enabled || weapons.freeze.enabled) ? 'Evo: Aura/Freeze' : '', apply: () => { player.duration *= 1.18; statUpgrades++; } });
+    options.push({ text: '⏭ Cooldown Red. +15%', hint: (weapons.katana.enabled || weapons.whip.enabled) ? 'Evo: Katana/Whip' : '', apply: () => { player.cooldownRed *= 1.15; statUpgrades++; } });
+    options.push({ text: '💨 Knockback +25%', hint: weapons.boomerang.enabled ? 'Evo: Boomerang' : '', apply: () => { player.knockback *= 1.25; statUpgrades++; } });
+    options.push({ text: '🔫 Pierce +1', hint: weapons.lightning.enabled ? 'Evo: Lightning' : '', apply: () => { player.pierce = Math.min(player.pierce + 1, 6); statUpgrades++; } });
   }
 
-  if (passives.critRing.level < passives.critRing.max && canAddStat) options.push({ text: '💍 Crit Ring +1', level: passives.critRing.level, isStat: true, apply: () => { passives.critRing.level++; player.critChance += 0.04; statUpgrades++; } });
-  if (passives.armor.level < passives.armor.max && canAddStat) options.push({ text: '🛡 Armor +1', level: passives.armor.level, isStat: true, apply: () => { passives.armor.level++; player.armor += 1; statUpgrades++; } });
-  if (passives.xpBoost.level < passives.xpBoost.max && canAddStat) options.push({ text: '⭐ XP Boost +1', level: passives.xpBoost.level, isStat: true, apply: () => { passives.xpBoost.level++; player.xpGain += 0.12; statUpgrades++; } });
+  if (passives.critRing.level < passives.critRing.max && canAddStat) options.push({ text: '💍 Crit Ring +1', level: passives.critRing.level, apply: () => { passives.critRing.level++; player.critChance += 0.04; statUpgrades++; } });
+  if (passives.armor.level < passives.armor.max && canAddStat) options.push({ text: '🛡 Armor +1', level: passives.armor.level, hint: weapons.shield.enabled ? 'Evo: Shield' : '', apply: () => { passives.armor.level++; player.armor += 1; statUpgrades++; } });
+  if (passives.xpBoost.level < passives.xpBoost.max && canAddStat) options.push({ text: '⭐ XP Boost +1', level: passives.xpBoost.level, apply: () => { passives.xpBoost.level++; player.xpGain += 0.12; statUpgrades++; } });
 
   if (canAddWeapon) {
     if (!weapons.rocket.enabled) options.push({ text: '🚀 Rocket freischalten', apply: () => { weapons.rocket.enabled = true; weapons.rocket.level = 1; } });
